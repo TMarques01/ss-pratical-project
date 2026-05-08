@@ -8,6 +8,8 @@ import dotenv
 from . import db
 from . import utils
 from werkzeug.utils import secure_filename
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 
 dotenv.load_dotenv()
 
@@ -20,6 +22,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 DB_NAME = os.getenv("DB_NAME", "docdb")
 
 UPLOAD_FOLDER = "uploads"
+ph = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
 
 def get_db():
     return psycopg2.connect(
@@ -93,11 +96,15 @@ def register_routes(app):
 
             is_admin = username == "admin"
 
-            if user and (user[2] == password and not user[3]) or is_admin:
-                flask.session.clear()
-                flask.session["user_id"] = user[0] if username != "admin" else 1
-                flask.session["username"] = user[1] if username != "admin" else username
-                return flask.redirect(flask.url_for("documents_page"))
+            if user and not user[3]:
+                try:
+                    ph.verify(user[2], password)
+                    flask.session.clear()
+                    flask.session["user_id"] = user[0]
+                    flask.session["username"] = user[1]
+                    return flask.redirect(flask.url_for("documents_page"))
+                except VerifyMismatchError:
+                    pass
 
             flask.flash("Invalid credentials.", "error")
 
@@ -225,7 +232,7 @@ def register_routes(app):
     # ------------------------------------------------------------------
     # Planned / Not Yet Implemented Endpoints
     #
-    # The following routes are part of the intended system interface and
+    # The following routes are part of the intended system interface and 
     # are not implemented in the baseline version of the application.
     #
     # The expected behavior of these endpoints is summarized below.
