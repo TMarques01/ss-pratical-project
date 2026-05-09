@@ -71,6 +71,14 @@ def login_required(fn):
 
     return wrapper
 
+def admin_required(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        if flask.session.get("username") != "admin":
+            flask.abort(403)
+        return fn(*args, **kwargs)
+    return wrapper
+
 def register_routes(app):
 
     @app.route("/")
@@ -211,11 +219,8 @@ def register_routes(app):
 
     @app.route("/admin/users/<int:user_id>/disable", methods=["POST"])
     @login_required
+    @admin_required
     def disable_user(user_id):
-        
-        if flask.session.get("username") != "admin":
-            flask.flash("Admin privileges required.", "error")
-            return flask.redirect(flask.url_for("login")), 403
 
         conn = get_db()
         cur = conn.cursor()
@@ -231,11 +236,8 @@ def register_routes(app):
 
     @app.route("/admin/users/<int:user_id>/enable", methods=["POST"])
     @login_required
+    @admin_required
     def enable_user(user_id):
-        
-        if flask.session.get("username") != "admin":
-            flask.flash("Admin privileges required.", "error")
-            return flask.redirect(flask.url_for("login")), 403
 
         conn = get_db()
         cur = conn.cursor()
@@ -251,10 +253,8 @@ def register_routes(app):
 
     @app.route("/admin/users")
     @login_required
+    @admin_required
     def admin_users():
-        if flask.session.get("username") != "admin":
-            flask.flash("Admin privileges required.", "error")
-            return flask.redirect(flask.url_for("login")), 403
 
         conn = get_db()
         cur = conn.cursor()
