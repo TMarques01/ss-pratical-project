@@ -136,7 +136,19 @@ jobs:
 
       - name: Run Bandit SAST Scan
         run: |
-          bandit -c security/bandit-config.yml -r web/app/ -f json -o results/bandit-report.json --severity-level high
+          bandit -c security/bandit-config.yml -r web/app/ -f json -o results/bandit-report.json --severity-level high || true
+
+      # Adding a log for a better understanding the problem
+      - name: Summarize Bandit findings
+        if: always()
+        run: |
+          if [ -f results/bandit-report.json ]; then
+            echo "### Bandit SAST Results ###"
+            jq -r '.results[] | "[\(.issue_severity)] \(.issue_text)\n  File: \(.filename):\(.line_number)\n  Rule: \(.test_id) - \(.test_name)\n"' results/bandit-report.json
+            TOTAL=$(jq '.results | length' results/bandit-report.json)
+            echo "Total issues: $TOTAL"
+            if [ "$TOTAL" -gt 0 ]; then exit 1; fi
+          fi
 
       - name: Upload Bandit report
         if: always()
