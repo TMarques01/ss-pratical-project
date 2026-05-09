@@ -47,4 +47,4 @@ web/uploads/*
 # Docker
 # -------------------------
 *.pid
-*.tmp
+*.tmp*.Identifier

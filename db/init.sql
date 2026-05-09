@@ -52,7 +52,11 @@ CREATE TABLE document_shares (
 --
 -- Removing or altering these accounts will cause automated validation to fail.
 -- ---------------------------------------------------------------------------
+-- The passwords before hashed are:
+-- admin: L|fP1D%327mB
+-- alice: tth1mJj5?£58
+-- bob: De586:Iq6}?!
 INSERT INTO users (username, password, is_disabled) VALUES
-('admin', 'L|fP1D%327mB', FALSE),
-('alice', 'tth1mJj5?£58', FALSE),
-('bob', 'De586:Iq6}?!', FALSE);
+('admin', '$argon2id$v=19$m=19456,t=2,p=1$7fCejpSSM5fZ8l/FtvPagQ$MgdO3kMtWGh9cffS6DUVTvOi3jhYtCLNdmcCnlrrMKE', FALSE),
+('alice', '$argon2id$v=19$m=19456,t=2,p=1$mleksTrIeVyVOJR7V3q7RA$kBbxqeJFJFsrwVBSVZPtcwZKByeW5NqH9r543VJOfgg', FALSE),
+('bob', '$argon2id$v=19$m=19456,t=2,p=1$mY1dnZmAEtk3mStb7iL95A$87+exckdOicEVdvyrZTt9AFJdvGkljlovQKRjKIveog', FALSE);
