@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div class="card">
+    <h2>Shared Documents</h2>
+    {% if documents %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Filename</th>
+          <th>Summary</th>
+          <th>Full</th>
+          <th>Download</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for doc in documents %}
+        <tr>
+          <td>{{ doc.id }}</td>
+          <td>{{ doc.title }}</td>
+          <td>{{ doc.filename }}</td>
+          <td>
+            <button class="details-btn" data-title="{{ doc.title }}">
+              Summary
+            </button>
+          </td>
+          <td>
+            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('document_details', document_id=doc.id) }}">
+              Details
+            </button>
+          </td>
+          <td>
+            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('download_document', document_id=doc.id) }}">
+              Download
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div id="doc-details" class="card" style="display:none;">
+      <h3>Document details</h3>
+      <p id="doc-title"></p>
+    </div>
+    {% else %}
+      <p>No shared documents found.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -287,7 +287,6 @@ def register_routes(app):
 
         
 
-    #GET  /documents/<id>/download
     @app.route("/documents/<int:document_id>/download")
     @login_required
     def download_document(document_id):
@@ -296,7 +295,7 @@ def register_routes(app):
         conn = get_db()
         cur = conn.cursor()
     
-        # Query the document
+       
         cur.execute(utils.prepare_query("""
             SELECT id, owner_id, filename
             FROM documents
@@ -311,20 +310,133 @@ def register_routes(app):
         if not row:
             return "Document not found", 404
         
-        # Authorization check - verify user owns the document
+        
         if row[1] != user_id:
             return "Unauthorized", 403
         
-        # Build safe file path
+        
         document_filename = row[2]
         file_path = BASE_DIR / app.config["UPLOAD_FOLDER"] / document_filename
         
-        # Verify file exists
+     
         if not file_path.exists():
             return "File not found", 404
         
-        # Return the file
+       
         return flask.send_file(str(file_path), as_attachment=True)
+    
+
+    @app.route("/documents/<int:document_id>/share", methods=["POST"])
+    @login_required
+    def share_document(document_id):
+        user_id = flask.session.get("user_id")
+        shared_with = flask.request.form.get("shared_with")
+        
+        if not shared_with:
+            flask.flash("Please specify a user to share with.", "error")
+            return flask.redirect(flask.url_for("document_details", document_id=document_id))
+        
+        try:
+            shared_with = int(shared_with)
+        except ValueError:
+            flask.flash("Invalid user ID.", "error")
+            return flask.redirect(flask.url_for("document_details", document_id=document_id))
+        
+        conn = get_db()
+        cur = conn.cursor()
+        
+
+        cur.execute(utils.prepare_query("""
+            SELECT owner_id FROM documents WHERE id = %s
+            """, (document_id,)))
+        
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            conn.close()
+            return "Document not found", 404
+        
+        if row[0] != user_id:
+            cur.close()
+            conn.close()
+            return "Unauthorized", 403
+        
+        
+        cur.execute(utils.prepare_query("""
+            SELECT id FROM users WHERE id = %s
+            """, (shared_with,)))
+        
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            flask.flash("User does not exist.", "error")
+            return flask.redirect(flask.url_for("document_details", document_id=document_id))
+        
+        
+        cur.execute(utils.prepare_query("""
+            SELECT id FROM document_shares 
+            WHERE document_id = %s AND shared_with = %s
+            """, (document_id, shared_with)))
+        
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            flask.flash("Document is already shared with this user.", "info")
+            return flask.redirect(flask.url_for("document_details", document_id=document_id))
+        
+        
+        try:
+            cur.execute("""
+                INSERT INTO document_shares (document_id, shared_with)
+                VALUES (%s, %s)
+            """, (document_id, shared_with))
+            conn.commit()
+            flask.flash("Document shared successfully.", "success")
+        except psycopg2.Error:
+            conn.rollback()
+            flask.flash("Error sharing document.", "error")
+        finally:
+            cur.close()
+            conn.close()
+        
+        return flask.redirect(flask.url_for("document_details", document_id=document_id))
+    
+    
+
+    @app.route("/shared")
+    @login_required
+    def shared_documents():
+        user_id = flask.session.get("user_id")
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT d.id, d.title, d.filename, d.uploaded_at
+            FROM documents d
+            JOIN document_shares ds ON d.id = ds.document_id
+            WHERE ds.shared_with = %s
+            ORDER BY d.uploaded_at DESC
+            """, (user_id,))
+
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        documents = [
+            {"id": row[0], "title": row[1], "filename": row[2], "uploaded_at": row[3]}
+            for row in rows
+        ]
+
+        return flask.render_template(
+            "shared.html",
+            documents=documents,
+            requested_user_id=user_id,
+            current_user_id=user_id,
+            username=flask.session.get("username"),
+        )
+    
 
 
     @app.route("/health")
@@ -338,7 +450,7 @@ def register_routes(app):
             return {"status": "ok"}, 200
         except Exception:
             return {"status": "error"}, 500
-        
+            
     
     # ------------------------------------------------------------------
     # Planned / Not Yet Implemented Endpoints
