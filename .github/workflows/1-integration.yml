@@ -136,7 +136,7 @@ jobs:
 
       - name: Run Bandit SAST Scan
         run: |
-          bandit -c security/bandit-config.yml -r app/ -f json -o results/bandit-report.json --severity-level high
+          bandit -c security/bandit-config.yml -r web/app/ -f json -o results/bandit-report.json --severity-level high
 
       - name: Upload Bandit report
         if: always()
