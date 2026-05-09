@@ -216,6 +216,52 @@ def register_routes(app):
 
         return flask.redirect(flask.url_for("documents_page", uploaded=title))
 
+    @app.route("/admin/users/<int:user_id>/disable", methods=["POST"])
+    @login_required
+    def disable_user(user_id):
+        
+        if flask.session.get("username") != "admin":
+            flask.flash("Admin privileges required.", "error")
+            return flask.redirect(flask.url_for("login")), 403
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        db.disable_user_by_id(cur, user_id)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        flask.flash("User disabled.", "success")
+        return flask.redirect(flask.url_for("admin_users"))
+
+    @app.route("/admin/users")
+    @login_required
+    def admin_users():
+        if flask.session.get("username") != "admin":
+            flask.flash("Admin privileges required.", "error")
+            return flask.redirect(flask.url_for("login")), 403
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        rows = db.get_all_users(cur)
+
+        cur.close()
+        conn.close()
+
+        users = [
+            {
+                "id": row[0],
+                "username": row[1],
+                "is_disabled": row[2],
+            }
+            for row in rows
+        ]
+
+        return flask.render_template("users.html", users=users)
+
     @app.route("/health")
     def health():
         try:
