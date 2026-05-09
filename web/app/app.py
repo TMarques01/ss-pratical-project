@@ -4,6 +4,8 @@ import os
 import psycopg2
 import flask
 import os
+from datetime import timedelta
+from flask_session import Session
 import dotenv
 from . import db
 from . import utils
@@ -42,6 +44,11 @@ def create_app():
 
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+
+    app.config["SESSION_TYPE"] = "filesystem"
+    Session(app)
 
     register_routes(app)
 
@@ -108,6 +115,9 @@ def register_routes(app):
                 try:
                     ph.verify(user[2], password)
                     flask.session.clear()
+
+                    flask.session.permanent = True
+
                     flask.session["user_id"] = user[0]
                     flask.session["username"] = user[1]
                     if user[1] == "admin":
