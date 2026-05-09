@@ -110,28 +110,6 @@ jobs:
             fetch-depth: 0 # Required for Gitleaks to scan full history
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-          
-      - name: Save Gitleaks Report
-        id: save-gitleaks-report
-        if: failure() && steps.gitleaks-secrets.outcome == 'failure'
-        run: |
-          # The gitleaks-action outputs to gitleaks-report.json by default
-          if [ -f gitleaks-report.json ]; then
-            mkdir -p results
-            cp gitleaks-report.json results/gitleaks-report.json
-            echo "Gitleaks report saved to results/gitleaks-report.json"
-    
-            # Display summary
-            echo "### Gitleaks Findings ###"
-            cat gitleaks-report.json | jq -r '.[] | "Secret: \(.Description)\nFile: \(.File)\nLine: \(.StartLine)"'
-          else
-            echo "No gitleaks report found"
-          fi
           
   sast:
     name: Bandit SAST Scan
@@ -159,6 +137,13 @@ jobs:
       - name: Run Bandit SAST Scan
         run: |
           bandit -c security/bandit-config.yml -r app/ -f json -o results/bandit-report.json --severity-level high
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: results/bandit-report.json
 
   dependency:
     name: Dependency Scanning (Pip Audit)
