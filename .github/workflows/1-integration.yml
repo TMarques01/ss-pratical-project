@@ -192,8 +192,9 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
-    needs: [ test, dependency, sast,  secrets ]
-    if: github.event_name == 'push' # Apenas contece quando há um push e não quando um pull requeste é feito
+    needs: [ test, dependency, sast, secrets ]
+    if: github.event_name == 'push' 
+    # Apenas contece quando há um push e não quando um pull requeste é feito
 
     steps:
       - name: Checkout repository
