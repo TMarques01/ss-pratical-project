@@ -285,6 +285,48 @@ def register_routes(app):
 
         return flask.render_template("users.html", users=users)
 
+        
+
+    #GET  /documents/<id>/download
+    @app.route("/documents/<int:document_id>/download")
+    @login_required
+    def download_document(document_id):
+        user_id = flask.session.get("user_id")
+
+        conn = get_db()
+        cur = conn.cursor()
+    
+        # Query the document
+        cur.execute(utils.prepare_query("""
+            SELECT id, owner_id, filename
+            FROM documents
+            WHERE id = %s
+            """,
+            (document_id,)))
+        
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not row:
+            return "Document not found", 404
+        
+        # Authorization check - verify user owns the document
+        if row[1] != user_id:
+            return "Unauthorized", 403
+        
+        # Build safe file path
+        document_filename = row[2]
+        file_path = BASE_DIR / app.config["UPLOAD_FOLDER"] / document_filename
+        
+        # Verify file exists
+        if not file_path.exists():
+            return "File not found", 404
+        
+        # Return the file
+        return flask.send_file(str(file_path), as_attachment=True)
+
+
     @app.route("/health")
     def health():
         try:
@@ -296,8 +338,8 @@ def register_routes(app):
             return {"status": "ok"}, 200
         except Exception:
             return {"status": "error"}, 500
-
-
+        
+    
     # ------------------------------------------------------------------
     # Planned / Not Yet Implemented Endpoints
     #
