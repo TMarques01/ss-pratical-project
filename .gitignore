@@ -48,3 +48,8 @@ web/uploads/*
 # -------------------------
 *.pid
 *.tmp*.Identifier
+
+# -------------------------
+# Flask session files
+# -------------------------
+flask_session/

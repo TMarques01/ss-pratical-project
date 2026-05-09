@@ -27,6 +27,7 @@
           <th>Filename</th>
           <th>Summary</th>
           <th>Full</th>
+          <th>Download</th>
         </tr>
       </thead>
       <tbody>
@@ -40,19 +41,24 @@
               Summary
             </button>
           </td>
-        <td>
-          <a href="{{ url_for('document_details', document_id=doc.id) }}">
-            Details
-          </a>
-        </td>
+          <td>
+            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('document_details', document_id=doc.id) }}">
+              Details
+            </button>
+          </td>
+          <td>
+            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('download_document', document_id=doc.id) }}">
+              Download
+            </button>
+          </td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
-        <div id="doc-details" class="card" style="display:none;">
-  <h3>Document details</h3>
-  <p id="doc-title"></p>
-</div>
+    <div id="doc-details" class="card" style="display:none;">
+      <h3>Document details</h3>
+      <p id="doc-title"></p>
+    </div>
     {% else %}
       <p>No documents found.</p>
     {% endif %}
