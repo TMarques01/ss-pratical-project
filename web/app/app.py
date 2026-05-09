@@ -7,6 +7,7 @@ import os
 from datetime import timedelta
 from flask_session import Session
 import dotenv
+import magic
 from . import db
 from . import utils
 from werkzeug.utils import secure_filename
@@ -25,6 +26,8 @@ DB_NAME = os.getenv("DB_NAME", "docdb")
 
 UPLOAD_FOLDER = "uploads"
 ph = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
+ALLOWED_MIMES = {"application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 def get_db():
     return psycopg2.connect(
@@ -205,9 +208,23 @@ def register_routes(app):
         upload_folder = BASE_DIR / app.config["UPLOAD_FOLDER"]
         upload_folder.mkdir(parents=True, exist_ok=True)
 
+        ext = pathlib.Path(uploaded_file.filename).suffix.lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            flask.flash("File type not allowed.", "error")
+            return flask.redirect(flask.url_for("documents_page"))
+
+        # Verificar magic bytes
+        file_bytes = uploaded_file.read(2048)
+        mime = magic.from_buffer(file_bytes, mime=True)
+        uploaded_file.seek(0)
+
+        if mime not in ALLOWED_MIMES:
+            flask.flash("File content does not match allowed types.", "error")
+            return flask.redirect(flask.url_for("documents_page"))
+
         filename = utils.sanitize_filename(uploaded_file.filename)
         destination = upload_folder / uploaded_file.filename
-        uploaded_file.save(destination)
+        uploaded_file.save(destination) 
         metadata = extract_metadata(destination)
 
         conn = get_db()
