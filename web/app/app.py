@@ -4,6 +4,8 @@ import os
 import psycopg2
 import flask
 import os
+from datetime import timedelta
+from flask_session import Session
 import dotenv
 from . import db
 from . import utils
@@ -43,6 +45,11 @@ def create_app():
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+
+    app.config["SESSION_TYPE"] = "filesystem"
+    Session(app)
+
     register_routes(app)
 
     return app
@@ -69,6 +76,14 @@ def login_required(fn):
             return flask.redirect(flask.url_for("login"))
         return fn(*args, **kwargs)
 
+    return wrapper
+
+def admin_required(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        if flask.session.get("username") != "admin":
+            flask.abort(403)
+        return fn(*args, **kwargs)
     return wrapper
 
 def register_routes(app):
@@ -100,8 +115,13 @@ def register_routes(app):
                 try:
                     ph.verify(user[2], password)
                     flask.session.clear()
+
+                    flask.session.permanent = True
+
                     flask.session["user_id"] = user[0]
                     flask.session["username"] = user[1]
+                    if user[1] == "admin":
+                        return flask.redirect(flask.url_for("admin_users"))
                     return flask.redirect(flask.url_for("documents_page"))
                 except VerifyMismatchError:
                     pass
@@ -116,25 +136,26 @@ def register_routes(app):
         return flask.redirect(flask.url_for("login"))
 
     @app.route("/documents/<int:document_id>")
+    @login_required
     def document_details(document_id):
+        current_user_id = flask.session.get("user_id")
         conn = get_db()
         cur = conn.cursor()
 
-        # intentionally missing authorization check
         cur.execute(utils.prepare_query("""
-            SELECT id, owner_id, title, filename, metadata
-            FROM documents
-            WHERE id = %s
+            SELECT d.id, d.owner_id, d.title, d.filename, d.metadata
+            FROM documents d
+            LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.shared_with = %s
+            WHERE d.id = %s AND (d.owner_id = %s OR ds.shared_with = %s)
             """,
-            (document_id,)))
+            (current_user_id, document_id, current_user_id, current_user_id)))
 
         row = cur.fetchone()
-
         cur.close()
         conn.close()
 
         if not row:
-            return "Document not found", 404
+            flask.abort(403) 
 
         document = {
             "id": row[0],
@@ -149,33 +170,23 @@ def register_routes(app):
     @app.route("/documents")
     @login_required
     def documents_page():
-        requested_user_id = flask.request.args.get("user_id")
+        
         current_user_id = flask.session.get("user_id")
-
-        owner_id = requested_user_id or current_user_id
 
         conn = get_db()
         cur = conn.cursor()
-
-        docs = get_documents_for_user(cur, owner_id)
-
+        docs = get_documents_for_user(cur, current_user_id)
         cur.close()
         conn.close()
 
         documents = [
-            {
-                "id": d[0],
-                "title": d[1],
-                "filename": d[2],
-                "uploaded_at": d[3],
-            }
-            for d in docs
+            {"id": d[0], "title": d[1], "filename": d[2], "uploaded_at": d[3]} for d in docs
         ]
 
         return flask.render_template(
             "documents.html",
             documents=documents,
-            requested_user_id=owner_id,
+            requested_user_id=current_user_id,
             current_user_id=current_user_id,
             username=flask.session.get("username"),
         )
@@ -215,6 +226,64 @@ def register_routes(app):
         conn.close()
 
         return flask.redirect(flask.url_for("documents_page", uploaded=title))
+
+    @app.route("/admin/users/<int:user_id>/disable", methods=["POST"])
+    @login_required
+    @admin_required
+    def disable_user(user_id):
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        db.disable_user_by_id(cur, user_id)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        flask.flash("User disabled.", "success")
+        return flask.redirect(flask.url_for("admin_users"))
+
+    @app.route("/admin/users/<int:user_id>/enable", methods=["POST"])
+    @login_required
+    @admin_required
+    def enable_user(user_id):
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        db.enable_user_by_id(cur, user_id)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        flask.flash("User enabled.", "success")
+        return flask.redirect(flask.url_for("admin_users"))
+
+    @app.route("/admin/users")
+    @login_required
+    @admin_required
+    def admin_users():
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        rows = db.get_all_users(cur)
+
+        cur.close()
+        conn.close()
+
+        users = [
+            {
+                "id": row[0],
+                "username": row[1],
+                "is_disabled": row[2],
+            }
+            for row in rows
+        ]
+
+        return flask.render_template("users.html", users=users)
 
     @app.route("/health")
     def health():
