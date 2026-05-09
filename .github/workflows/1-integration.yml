@@ -247,7 +247,7 @@ jobs:
           fi
 
       - name: Generate SBOM for WEB Docker image
-        uses: anchore/scan-action@v0
+        uses: anchore/sbom-action@v0
         with:
           image: ${{ env.WEB_SHA_TAG }}
           output-file: sbom_WEB.cdx.json
@@ -286,7 +286,7 @@ jobs:
           fi
 
       - name: Generate SBOM for DB Docker image
-        uses: anchore/scan-action@v0
+        uses: anchore/sbom-action@v0
         with:
           image: ${{ env.DB_SHA_TAG }}
           output-file: sbom_DB.cdx.json
