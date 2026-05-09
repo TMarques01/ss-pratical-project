@@ -184,7 +184,7 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          pip-audit -r web/requirements.txt --format json
+          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json
 
       - name: Upload pip-audit report
         if: always()
