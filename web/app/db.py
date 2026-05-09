@@ -10,7 +10,11 @@ def disable_user_by_id(cur, user_id):
     query = utils.prepare_query("UPDATE users SET is_disabled = TRUE WHERE id = %s", user_id)
     cur.execute(query)
 
+def enable_user_by_id(cur, user_id):
+    query = utils.prepare_query("UPDATE users SET is_disabled = FALSE WHERE id = %s", user_id)
+    cur.execute(query)
 
 def get_all_users(cur):
     cur.execute("SELECT id, username, is_disabled FROM users ORDER BY id")
     return cur.fetchall()
+

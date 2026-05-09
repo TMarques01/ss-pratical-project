@@ -102,6 +102,8 @@ def register_routes(app):
                     flask.session.clear()
                     flask.session["user_id"] = user[0]
                     flask.session["username"] = user[1]
+                    if user[1] == "admin":
+                        return flask.redirect(flask.url_for("admin_users"))
                     return flask.redirect(flask.url_for("documents_page"))
                 except VerifyMismatchError:
                     pass
@@ -234,6 +236,26 @@ def register_routes(app):
         conn.close()
 
         flask.flash("User disabled.", "success")
+        return flask.redirect(flask.url_for("admin_users"))
+
+    @app.route("/admin/users/<int:user_id>/enable", methods=["POST"])
+    @login_required
+    def enable_user(user_id):
+        
+        if flask.session.get("username") != "admin":
+            flask.flash("Admin privileges required.", "error")
+            return flask.redirect(flask.url_for("login")), 403
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        db.enable_user_by_id(cur, user_id)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        flask.flash("User enabled.", "success")
         return flask.redirect(flask.url_for("admin_users"))
 
     @app.route("/admin/users")
