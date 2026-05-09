@@ -103,11 +103,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-    
+        with:
+          fetch-depth: 0
+
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
-        with:
-            fetch-depth: 0 # Required for Gitleaks to scan full history
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
           
