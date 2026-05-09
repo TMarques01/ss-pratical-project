@@ -32,7 +32,7 @@
             </button>
           </td>
           <td>
-            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('download_document', document_id=doc.id) }}">
+            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('download_shared_document', document_id=doc.id) }}">
               Download
             </button>
           </td>

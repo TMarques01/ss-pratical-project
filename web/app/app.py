@@ -454,7 +454,34 @@ def register_routes(app):
             username=flask.session.get("username"),
         )
     
+    @app.route("/shared/<int:document_id>/download")
+    @login_required
+    def download_shared_document(document_id):
+        user_id = flask.session.get("user_id")
 
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(utils.prepare_query("""
+            SELECT d.filename
+            FROM documents d
+            JOIN document_shares ds ON ds.document_id = d.id
+            WHERE d.id = %s AND ds.shared_with = %s
+            """, (document_id, user_id)))
+
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not row:
+            return "Document not found or access denied", 404
+
+        file_path = BASE_DIR / app.config["UPLOAD_FOLDER"] / row[0]
+
+        if not file_path.exists():
+            return "File not found", 404
+
+        return flask.send_file(str(file_path), as_attachment=True)
 
     @app.route("/health")
     def health():
