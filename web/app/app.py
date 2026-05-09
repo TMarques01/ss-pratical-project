@@ -118,25 +118,26 @@ def register_routes(app):
         return flask.redirect(flask.url_for("login"))
 
     @app.route("/documents/<int:document_id>")
+    @login_required
     def document_details(document_id):
+        current_user_id = flask.session.get("user_id")
         conn = get_db()
         cur = conn.cursor()
 
-        # intentionally missing authorization check
         cur.execute(utils.prepare_query("""
-            SELECT id, owner_id, title, filename, metadata
-            FROM documents
-            WHERE id = %s
+            SELECT d.id, d.owner_id, d.title, d.filename, d.metadata
+            FROM documents d
+            LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.shared_with = %s
+            WHERE d.id = %s AND (d.owner_id = %s OR ds.shared_with = %s)
             """,
-            (document_id,)))
+            (current_user_id, document_id, current_user_id, current_user_id)))
 
         row = cur.fetchone()
-
         cur.close()
         conn.close()
 
         if not row:
-            return "Document not found", 404
+            flask.abort(403) 
 
         document = {
             "id": row[0],
@@ -151,33 +152,23 @@ def register_routes(app):
     @app.route("/documents")
     @login_required
     def documents_page():
-        requested_user_id = flask.request.args.get("user_id")
+        
         current_user_id = flask.session.get("user_id")
-
-        owner_id = requested_user_id or current_user_id
 
         conn = get_db()
         cur = conn.cursor()
-
-        docs = get_documents_for_user(cur, owner_id)
-
+        docs = get_documents_for_user(cur, current_user_id)
         cur.close()
         conn.close()
 
         documents = [
-            {
-                "id": d[0],
-                "title": d[1],
-                "filename": d[2],
-                "uploaded_at": d[3],
-            }
-            for d in docs
+            {"id": d[0], "title": d[1], "filename": d[2], "uploaded_at": d[3]} for d in docs
         ]
 
         return flask.render_template(
             "documents.html",
             documents=documents,
-            requested_user_id=owner_id,
+            requested_user_id=current_user_id,
             current_user_id=current_user_id,
             username=flask.session.get("username"),
         )
