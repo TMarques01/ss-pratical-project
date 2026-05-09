@@ -180,10 +180,10 @@ jobs:
 
       - name: Create results directory for pip-audit
         run: mkdir -p results
-        
+
       - name: Run pip-audit
         run: |
-          pip-audit -r web/app/requirements.txt --format json > results/pip-audit-report.json
+          pip-audit -r web/requirements.txt --format json > results/pip-audit-report.json
               
   build-and-push:
     runs-on: ubuntu-latest
