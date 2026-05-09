@@ -157,7 +157,7 @@ jobs:
 
       - name: Run Bandit SAST Scan
         run: |
-          bandit -c security-tools/bandit-config.yml -r app/ -f json -o results/bandit-report.json --severity-level high
+          bandit -c security/bandit-config.yml -r app/ -f json -o results/bandit-report.json --severity-level high
 
   dependency:
     name: Dependency Scanning (Pip Audit)
@@ -173,10 +173,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Create results directory for pip-audit
+        run: mkdir -p results
+        
       - name: Run pip-audit
-        uses: pypa/gh-action-pip-audit@v1.4.0
-        with:
-          inputs: 'web/requirements.txt'
+        run: |
+          pip-audit -r web/app/requirements.txt --format json > results/pip-audit-report.json
               
   build-and-push:
     runs-on: ubuntu-latest
