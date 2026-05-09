@@ -147,12 +147,15 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install Bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+
       - name: Create results directory for Bandit
-        id: create-bandit-results-dir
         run: mkdir -p results
 
       - name: Run Bandit SAST Scan
-        id: bandit-sast
         run: |
           bandit -c security-tools/bandit-config.yml -r app/ -f json -o results/bandit-report.json --severity-level high
 
@@ -173,7 +176,7 @@ jobs:
       - name: Run pip-audit
         uses: pypa/gh-action-pip-audit@v1.0.0
         with:
-          inputs: requirements.txt
+          inputs: 'web/requirements.txt'
               
   
   build-and-push:
