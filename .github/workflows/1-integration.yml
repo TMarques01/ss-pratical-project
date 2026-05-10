@@ -184,7 +184,7 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json; cat results/pip-audit-report.json | jq -r '.[] | "[\(.vulnerability_id)] \(.description)\n  Package: \(.name) \(.version)\n  Advisory: \(.advisory)\n"'
+          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json; cat results/pip-audit-report.json
 
       - name: Upload pip-audit report
         if: always()
