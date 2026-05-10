@@ -1,4 +1,4 @@
-FROM postgres:17
+FROM postgres:18
 
 # Copy initialization scripts
 COPY init.sql /docker-entrypoint-initdb.d/
@@ -7,3 +7,5 @@ COPY init.sql /docker-entrypoint-initdb.d/
 ENV POSTGRES_DB=docdb
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=postgres
+
+# Need to change that

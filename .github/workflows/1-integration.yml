@@ -204,7 +204,6 @@ jobs:
         run: | # This é para guardar o nome de quem criou o repositorio em letra minusculas por causa do ghcr que só aceita tudo em letras minusculas. Ele usa o 'tr' que pega no stdin em UPPER e enviar para o stdout com LOWER. Isto está a ser guardado no $GITHUB_ENV que guarda variaveis no environment do github
           echo "IMAGE_NAMESPACE_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV" 
 
-          
       - name: Log in to GHCR # Login automático no GHCR para guardar as imagens. 
         uses: docker/login-action@v4
         with:
@@ -240,7 +239,6 @@ jobs:
           format: 'table'
           exit-code: '1' # Fail the build if vulnerabilities are found
           severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
-          ignore-unfixed: true # Preciso adicionar isto para não verificar falhas que ainda não têm correlção
 
 
       - name: Generate Trivy Web Docker Image Summary
@@ -284,7 +282,6 @@ jobs:
           format: 'table'
           exit-code: '1' # Fail the build if vulnerabilities are found
           severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
-          ignore-unfixed: true # Preciso adicionar isto para não verificar falhas que ainda não têm correlção
 
 
       - name: Generate Trivy DB Docker Image Summary 
