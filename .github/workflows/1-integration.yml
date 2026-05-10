@@ -262,14 +262,10 @@ jobs:
         uses: anchore/sbom-action@v0
         with:
           image: ${{ env.WEB_SHA_TAG }}
-          output-file: sbom_WEB.cdx.json
+          output-file: sbom_WEB-${{ github.sha }}.cdx.json
           format: cyclonedx-json
 
-      - name: Upload SBOM as artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: sbom-${{ github.sha }}
-          path: sbom_WEB.cdx.json
+
 
       - name: Build and push db image
         uses: docker/build-push-action@v7
@@ -310,11 +306,5 @@ jobs:
         uses: anchore/sbom-action@v0
         with:
           image: ${{ env.DB_SHA_TAG }}
-          output-file: sbom_DB.cdx.json
+          output-file: sbom_DB-${{ github.sha }}.cdx.json
           format: cyclonedx-json
-
-      - name: Upload SBOM as artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: sbom-${{ github.sha }}
-          path: sbom_DB.cdx.json
