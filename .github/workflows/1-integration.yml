@@ -39,11 +39,12 @@ jobs:
 
       - name: Run Flake8 linting
         run: |
-          flake8 web/app tests/ web  || true
+          flake8 web/app tests/ web --ignore=E501,W503,E303,W293,W292
 
   test:
       # This will run on a new ubuntu machine
     runs-on: ubuntu-latest
+    needs: lint
     
     steps:
         # This is to clone the repository to the machine (needs to be made manually)
@@ -136,7 +137,7 @@ jobs:
 
       - name: Run Bandit SAST Scan
         run: |
-          bandit -c security/bandit-config.yml -r web/app/ -f json -o results/bandit-report.json --severity-level high || true
+          bandit -c security/bandit-config.yml -r web/app/ -f json -o results/bandit-report.json --severity-level high
 
       # Adding a log for a better understanding the problem
       - name: Summarize Bandit findings
@@ -181,7 +182,7 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json || true
+          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json 
 
       - name: Upload pip-audit report
         if: always()
