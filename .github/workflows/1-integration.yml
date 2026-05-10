@@ -240,6 +240,8 @@ jobs:
           format: 'table'
           exit-code: '1' # Fail the build if vulnerabilities are found
           severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
+          ignore-unfixed: true # Preciso adicionar isto para não verificar falhas que ainda não têm correlção
+
 
       - name: Generate Trivy Web Docker Image Summary
         if: always()
@@ -286,6 +288,8 @@ jobs:
           format: 'table'
           exit-code: '1' # Fail the build if vulnerabilities are found
           severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
+          ignore-unfixed: true # Preciso adicionar isto para não verificar falhas que ainda não têm correlção
+
 
       - name: Generate Trivy DB Docker Image Summary 
         if: always()
