@@ -184,7 +184,18 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json; cat results/pip-audit-report.json
+          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json || true
+
+      - name: Summarize pip-audit findings
+        if: always()
+        run: |
+          if [ -f results/pip-audit-report.json ]; then
+            echo "### Pip-Audit Results ###"
+            jq -r '.dependencies[] | select(.vulns | length > 0) | .name as $pkg | .version as $ver | .vulns[] | "[\(.id)] \($pkg)==\($ver)\n  \(.description)\n  Fix: \(.fix_versions // ["none"] | join(", "))\n"' results/pip-audit-report.json
+            TOTAL=$(jq '[.dependencies[].vulns[]] | length' results/pip-audit-report.json)
+            echo "Total vulnerabilities: $TOTAL"
+            if [ "$TOTAL" -gt 0 ]; then exit 1; fi
+          fi
 
       - name: Upload pip-audit report
         if: always()
