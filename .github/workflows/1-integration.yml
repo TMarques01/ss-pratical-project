@@ -233,7 +233,7 @@ jobs:
         run: mkdir -p results
 
       - name: Scan Docker image WEB with Trivy
-        uses: aquasecurity/trivy-action@v0.9.0
+        uses: aquasecurity/trivy-action@v0.30.0
         with:
           image-ref: ${{ env.WEB_SHA_TAG }}
           output: 'results/trivy-web-report.txt'
@@ -272,7 +272,7 @@ jobs:
           provenance: false
       
       - name: Scan DB Docker image with Trivy
-        uses: aquasecurity/trivy-action@v0.9.0
+        uses: aquasecurity/trivy-action@v0.30.0
         with:
           image-ref: ${{ env.DB_SHA_TAG }}
           output: 'results/trivy-db-report.txt'
