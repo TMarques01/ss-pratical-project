@@ -194,7 +194,7 @@ jobs:
             jq -r '.[] | "[\(.vulnerability.severity)] \(.name) \(.version)\n  Vulnerability ID: \(.vulnerability.id)\n  Advisory: \(.vulnerability.advisory)\n  Fixed in: \(.vulnerability.fixed_versions | join(", "))\n"' results/pip-audit-report.json
             TOTAL=$(jq 'length' results/pip-audit-report.json)
             echo "Total vulnerable dependencies: $TOTAL"
-            if [ "$TOTAL" -gt 0 ]; then exit 1;
+            if [ "$TOTAL" -gt 0 ]; then exit 1; fi
           fi
 
       - name: Upload pip-audit report
