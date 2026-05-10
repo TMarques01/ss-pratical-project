@@ -41,6 +41,7 @@ jobs:
         run: |
           flake8 web/app tests/ web --ignore=E501,W503,E303,W293,W292,E302,W291
 
+  # Pytest
   test:
       # This will run on a new ubuntu machine
     runs-on: ubuntu-latest
@@ -110,7 +111,8 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-          
+     
+  # Bandit
   sast:
     name: Bandit SAST Scan
     runs-on: ubuntu-latest
@@ -147,7 +149,7 @@ jobs:
             jq -r '.results[] | "[\(.issue_severity)] \(.issue_text)\n  File: \(.filename):\(.line_number)\n  Rule: \(.test_id) - \(.test_name)\n"' results/bandit-report.json
             TOTAL=$(jq '.results | length' results/bandit-report.json)
             echo "Total issues: $TOTAL"
-            ### if [ "$TOTAL" -gt 0 ]; then exit 1; fi
+            if [ "$TOTAL" -gt 0 ]; then exit 1; fi
           fi
 
       - name: Upload Bandit report
@@ -156,7 +158,8 @@ jobs:
         with:
           name: bandit-report
           path: results/bandit-report.json
-
+  
+  # Pip-audit
   dependency:
     name: Dependency Scanning (Pip Audit)
     runs-on: ubuntu-latest
@@ -182,6 +185,17 @@ jobs:
       - name: Run pip-audit
         run: |
           pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json 
+
+      - name: Summarize pip-audit findings
+        if: always()
+        run: | 
+          if [ -f results/pip-audit-report.json ]; then
+            echo "### pip-audit Results ###"
+            jq -r '.[] | "[\(.vulnerability.severity)] \(.name) \(.version)\n  Vulnerability ID: \(.vulnerability.id)\n  Advisory: \(.vulnerability.advisory)\n  Fixed in: \(.vulnerability.fixed_versions | join(", "))\n"' results/pip-audit-report.json
+            TOTAL=$(jq 'length' results/pip-audit-report.json)
+            echo "Total vulnerable dependencies: $TOTAL"
+            if [ "$TOTAL" -gt 0 ]; then exit 1;
+          fi
 
       - name: Upload pip-audit report
         if: always()
