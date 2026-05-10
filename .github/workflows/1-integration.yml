@@ -241,12 +241,12 @@ jobs:
           exit-code: '1' # Fail the build if vulnerabilities are found
           severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
 
-      - name: Generate Trivy Web Docker Image Summary 
+      - name: Generate Trivy Web Docker Image Summary
         if: always()
         run: |
           if [ -f results/trivy-web-report.txt ]; then
-            echo "### Trivy Scan Results ###"
-            cat results/trivy-web-report.txt | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity): \(.VulnerabilityID) in \(.PkgName) \(.InstalledVersion)"'
+            echo "### Trivy Web Scan Results ###"
+            cat results/trivy-web-report.txt
           fi
 
       - name: Generate SBOM for WEB Docker image
@@ -285,7 +285,7 @@ jobs:
         run: |
           if [ -f results/trivy-db-report.txt ]; then
             echo "### Trivy Scan Results ###"
-            cat results/trivy-db-report.txt | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity): \(.VulnerabilityID) in \(.PkgName) \(.InstalledVersion)"'
+            cat results/trivy-db-report.txt
           fi
 
       - name: Generate SBOM for DB Docker image
