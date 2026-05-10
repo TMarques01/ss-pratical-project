@@ -1,0 +1,16 @@
+# gosu binary shipped with postgres:17 base image
+# Compiled with Go v1.24.6 which has known stdlib vulnerabilities
+# Remediation depends on postgres maintainers rebuilding gosu
+# with an updated Go toolchain — no fix available from our side
+# gosu only executes at container init for privilege dropping
+# and is not exposed to network traffic or application input
+
+CVE-2025-68121
+CVE-2025-58183
+CVE-2025-61726
+CVE-2025-61728
+CVE-2025-61729
+CVE-2026-25679
+CVE-2026-32280
+CVE-2026-32281
+CVE-2026-32283
