@@ -1,4 +1,4 @@
-FROM postgres:18
+FROM postgres:18.3
 
 # Copy initialization scripts
 COPY init.sql /docker-entrypoint-initdb.d/
