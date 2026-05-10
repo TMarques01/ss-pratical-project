@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 env:
   REGISTRY: ghcr.io
@@ -17,18 +18,46 @@ env:
   DB_IMAGE_NAME: secure-doc-platform-db
 
 jobs:
-  test:
+
+  lint:
+    name: Linting
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install linting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 bandit
+
+      - name: Run Flake8 linting
+        run: |
+          flake8 web/app tests/ web --ignore=E501,W503,E303,W293,W292,E302,W291
+
+  # Pytest
+  test:
+      # This will run on a new ubuntu machine
+    runs-on: ubuntu-latest
+    
+    steps:
+        # This is to clone the repository to the machine (needs to be made manually)
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+        # Startin the application inside the machine
       - name: Start application stack for validation
         run: |
           docker compose up -d --build
-
-      - name: Wait for application
+    
+      
+      - name: Wait for application # This is a health check. Waits 60 seconds until the application is ready. Prevent tests to for being executed in half way environment
         run: |
           timeout=60
           elapsed=0
@@ -61,36 +90,147 @@ jobs:
           pytest -q tests/test_smoke.py
 
       - name: Stop stack
-        if: always()
+        if: always() # Happens everythime. Aslo we have the succed() and the failed()
         run: |
           docker compose down -v --remove-orphans
 
-  build-and-push:
+  # Gitleaks
+  secrets:
+
+    name: Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+     
+  # Bandit
+  sast:
+    name: Bandit SAST Scan
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+    
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+
+      - name: Create results directory for Bandit
+        run: mkdir -p results
+
+      - name: Run Bandit SAST Scan
+        run: |
+          bandit -c security/bandit-config.yml -r web/app/ -f json -o results/bandit-report.json --severity-level high
+
+      # Adding a log for a better understanding the problem
+      - name: Summarize Bandit findings
+        if: always()
+        run: | 
+          if [ -f results/bandit-report.json ]; then
+            echo "### Bandit SAST Results ###"
+            jq -r '.results[] | "[\(.issue_severity)] \(.issue_text)\n  File: \(.filename):\(.line_number)\n  Rule: \(.test_id) - \(.test_name)\n"' results/bandit-report.json
+            TOTAL=$(jq '.results | length' results/bandit-report.json)
+            echo "Total issues: $TOTAL"
+            if [ "$TOTAL" -gt 0 ]; then exit 1; fi
+          fi
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: results/bandit-report.json
+  
+  # Pip-audit
+  dependency:
+    name: Dependency Scanning (Pip Audit)
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+    
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Create results directory for pip-audit
+        run: mkdir -p results
+
+      - name: Run pip-audit
+        run: |
+          pip-audit -r web/requirements.txt --format json -o results/pip-audit-report.json || true
+
+      - name: Summarize pip-audit findings
+        if: always()
+        run: |
+          if [ -f results/pip-audit-report.json ]; then
+            echo "### Pip-Audit Results ###"
+            jq -r '.dependencies[] | select(.vulns | length > 0) | .name as $pkg | .version as $ver | .vulns[] | "[\(.id)] \($pkg)==\($ver)\n  \(.description)\n  Fix: \(.fix_versions // ["none"] | join(", "))\n"' results/pip-audit-report.json
+            TOTAL=$(jq '[.dependencies[].vulns[]] | length' results/pip-audit-report.json)
+            echo "Total vulnerabilities: $TOTAL"
+            if [ "$TOTAL" -gt 0 ]; then exit 1; fi
+          fi
+
+      - name: Upload pip-audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: results/pip-audit-report.json
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [ test, dependency, sast, secrets ]
+    if: github.event_name == 'push' 
+    # Apenas contece quando há um push e não quando um pull requeste é feito
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Set lowercase image namespace
-        run: |
-          echo "IMAGE_NAMESPACE_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+        run: | # This é para guardar o nome de quem criou o repositorio em letra minusculas por causa do ghcr que só aceita tudo em letras minusculas. Ele usa o 'tr' que pega no stdin em UPPER e enviar para o stdout com LOWER. Isto está a ser guardado no $GITHUB_ENV que guarda variaveis no environment do github
+          echo "IMAGE_NAMESPACE_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV" 
 
-      - name: Log in to GHCR
+      - name: Log in to GHCR # Login automático no GHCR para guardar as imagens. 
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.actor }} # Refere-se a quem criou o pull request ou push
+          password: ${{ secrets.GITHUB_TOKEN }} # Token criado automáticamente, não é necessário que seja configurado
 
       - name: Set image tags
-        run: |
-          echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV"
+        run: | # Está a criar as variávies da tag que as imagens serão guardadas
+          echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV" 
           echo "DB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV"
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker Buildx # Tudo que está aqui para baixo é para construir as imagens e enviá-las para o GHRC
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push web image
@@ -102,6 +242,43 @@ jobs:
             ${{ env.WEB_SHA_TAG }}
           provenance: false
 
+      - name: Create results directory
+        run: mkdir -p results
+
+      - name: Scan Docker image WEB with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.WEB_SHA_TAG }}
+          output: 'results/trivy-web-report.txt'
+          format: 'table'
+          exit-code: '1' # Fail the build if vulnerabilities are found
+          severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
+          ignore-unfixed: true # Ignore vulnerabilities that do not have a fix available
+
+      - name: Generate Trivy Web Docker Image Summary
+        if: always()
+        run: |
+          if [ -f results/trivy-web-report.txt ]; then
+            echo "### Trivy Web Scan Results ###"
+            cat results/trivy-web-report.txt
+          fi
+
+      - name: Upload Trivy Web report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-web-report-${{ github.sha }}
+          path: results/trivy-web-report.txt
+
+      - name: Generate SBOM for WEB Docker image
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.WEB_SHA_TAG }}
+          output-file: sbom_WEB-${{ github.sha }}.cdx.json
+          format: cyclonedx-json
+
+
+
       - name: Build and push db image
         uses: docker/build-push-action@v7
         with:
@@ -110,3 +287,36 @@ jobs:
           tags: |
             ${{ env.DB_SHA_TAG }}
           provenance: false
+      
+      - name: Scan DB Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DB_SHA_TAG }}
+          output: 'results/trivy-db-report.txt'
+          format: 'table'
+          exit-code: '1' # Fail the build if vulnerabilities are found
+          severity: 'HIGH,CRITICAL' # Only report high and critical vulnerabilities
+          ignore-unfixed: true # Ignore vulnerabilities that do not have a fix available
+
+
+      - name: Generate Trivy DB Docker Image Summary 
+        if: always()
+        run: |
+          if [ -f results/trivy-db-report.txt ]; then
+            echo "### Trivy Scan Results ###"
+            cat results/trivy-db-report.txt
+          fi
+
+      - name: Upload Trivy DB report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-db-report-${{ github.sha }}
+          path: results/trivy-db-report.txt
+
+      - name: Generate SBOM for DB Docker image
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DB_SHA_TAG }}
+          output-file: sbom_DB-${{ github.sha }}.cdx.json
+          format: cyclonedx-json
