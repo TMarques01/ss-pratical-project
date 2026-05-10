@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN apt-get update && apt-get install -y libmagic1
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
