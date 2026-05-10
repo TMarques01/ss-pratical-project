@@ -249,6 +249,13 @@ jobs:
             cat results/trivy-web-report.txt
           fi
 
+      - name: Upload Trivy Web report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-web-report-${{ github.sha }}
+          path: results/trivy-web-report.txt
+
       - name: Generate SBOM for WEB Docker image
         uses: anchore/sbom-action@v0
         with:
@@ -287,6 +294,13 @@ jobs:
             echo "### Trivy Scan Results ###"
             cat results/trivy-db-report.txt
           fi
+
+      - name: Upload Trivy DB report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-db-report-${{ github.sha }}
+          path: results/trivy-db-report.txt
 
       - name: Generate SBOM for DB Docker image
         uses: anchore/sbom-action@v0
