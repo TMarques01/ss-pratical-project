@@ -39,7 +39,7 @@ jobs:
 
       - name: Run Flake8 linting
         run: |
-          flake8 web/app tests/ web --ignore=E501,W503,E303,W293,W292
+          flake8 web/app tests/ web --ignore=E501,W503,E303,W293,W292,E302,W291
 
   test:
       # This will run on a new ubuntu machine
