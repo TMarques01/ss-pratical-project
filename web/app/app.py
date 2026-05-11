@@ -58,13 +58,13 @@ def create_app():
     return app
 
 def get_documents_for_user(cur, owner_id):
-    query = f"""
+    query, params = utils.prepare_query("""
         SELECT id,title,filename,uploaded_at
         FROM documents
         WHERE owner_id=%s
         ORDER BY uploaded_at DESC
-    """ % owner_id
-    cur.execute(query)
+    """, (owner_id,))
+    cur.execute(query,params)
     return cur.fetchall()
 
 def extract_metadata(filename):
@@ -145,20 +145,26 @@ def register_routes(app):
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute(utils.prepare_query("""
+        query, params = utils.prepare_query("""
             SELECT d.id, d.owner_id, d.title, d.filename, d.metadata
             FROM documents d
             LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.shared_with = %s
             WHERE d.id = %s AND (d.owner_id = %s OR ds.shared_with = %s)
-            """,
-            (current_user_id, document_id, current_user_id, current_user_id)))
+        """, (
+            current_user_id,
+            document_id,
+            current_user_id,
+            current_user_id
+        ))
+
+        cur.execute(query, params)
 
         row = cur.fetchone()
         cur.close()
         conn.close()
 
         if not row:
-            flask.abort(403) 
+            flask.abort(403)
 
         document = {
             "id": row[0],
@@ -313,12 +319,13 @@ def register_routes(app):
         cur = conn.cursor()
     
        
-        cur.execute(utils.prepare_query("""
+        query, params = utils.prepare_query("""
             SELECT id, owner_id, filename
             FROM documents
             WHERE id = %s
-            """,
-            (document_id,)))
+        """, (document_id,))
+
+        cur.execute(query, params)
         
         row = cur.fetchone()
         cur.close()
@@ -348,60 +355,80 @@ def register_routes(app):
     def share_document(document_id):
         user_id = flask.session.get("user_id")
         shared_with = flask.request.form.get("shared_with")
-        
+
         if not shared_with:
             flask.flash("Please specify a user to share with.", "error")
-            return flask.redirect(flask.url_for("document_details", document_id=document_id))
-        
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
+
         try:
             shared_with = int(shared_with)
         except ValueError:
             flask.flash("Invalid user ID.", "error")
-            return flask.redirect(flask.url_for("document_details", document_id=document_id))
-        
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
+
+        if shared_with == 1:
+            flask.flash("Cannot share documents with this user.", "error")
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
+
         conn = get_db()
         cur = conn.cursor()
-        
 
-        cur.execute(utils.prepare_query("""
-            SELECT owner_id FROM documents WHERE id = %s
-            """, (document_id,)))
-        
+    
+        query, params = utils.prepare_query(
+            "SELECT owner_id FROM documents WHERE id = %s",
+            (document_id,)
+        )
+        cur.execute(query, params)
+
         row = cur.fetchone()
-        
+
         if not row:
             cur.close()
             conn.close()
             return "Document not found", 404
-        
+
         if row[0] != user_id:
             cur.close()
             conn.close()
             return "Unauthorized", 403
+
         
-        
-        cur.execute(utils.prepare_query("""
-            SELECT id FROM users WHERE id = %s
-            """, (shared_with,)))
-        
+        query, params = utils.prepare_query(
+            "SELECT id FROM users WHERE id = %s",
+            (shared_with,)
+        )
+        cur.execute(query, params)
+
         if not cur.fetchone():
             cur.close()
             conn.close()
             flask.flash("User does not exist.", "error")
-            return flask.redirect(flask.url_for("document_details", document_id=document_id))
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
+
         
-        
-        cur.execute(utils.prepare_query("""
-            SELECT id FROM document_shares 
+        query, params = utils.prepare_query("""
+            SELECT id
+            FROM document_shares
             WHERE document_id = %s AND shared_with = %s
-            """, (document_id, shared_with)))
-        
+        """, (document_id, shared_with))
+        cur.execute(query, params)
+
         if cur.fetchone():
             cur.close()
             conn.close()
             flask.flash("Document is already shared with this user.", "info")
-            return flask.redirect(flask.url_for("document_details", document_id=document_id))
-        
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
+
         
         try:
             cur.execute("""
@@ -416,8 +443,10 @@ def register_routes(app):
         finally:
             cur.close()
             conn.close()
-        
-        return flask.redirect(flask.url_for("document_details", document_id=document_id))
+
+        return flask.redirect(
+            flask.url_for("document_details", document_id=document_id)
+        )
     
     
 
@@ -462,12 +491,14 @@ def register_routes(app):
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute(utils.prepare_query("""
+        query, params = utils.prepare_query("""
             SELECT d.filename
             FROM documents d
             JOIN document_shares ds ON ds.document_id = d.id
             WHERE d.id = %s AND ds.shared_with = %s
-            """, (document_id, user_id)))
+        """, (document_id, user_id))
+
+        cur.execute(query, params)
 
         row = cur.fetchone()
         cur.close()
