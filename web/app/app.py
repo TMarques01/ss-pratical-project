@@ -222,9 +222,9 @@ def register_routes(app):
             flask.flash("File content does not match allowed types.", "error")
             return flask.redirect(flask.url_for("documents_page"))
 
-        filename = utils.sanitize_filename(uploaded_file.filename)
-        destination = upload_folder / uploaded_file.filename
-        uploaded_file.save(destination) 
+        filename = secure_filename(uploaded_file.filename)
+        destination = upload_folder / filename
+        uploaded_file.save(destination)
         metadata = extract_metadata(destination)
 
         conn = get_db()
