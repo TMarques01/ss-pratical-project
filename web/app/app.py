@@ -3,7 +3,6 @@ import pathlib
 import os
 import psycopg2
 import flask
-import os
 from datetime import timedelta
 from flask_session import Session
 import dotenv
@@ -64,7 +63,7 @@ def get_documents_for_user(cur, owner_id):
         WHERE owner_id=%s
         ORDER BY uploaded_at DESC
     """, (owner_id,))
-    cur.execute(query,params)
+    cur.execute(query, params)
     return cur.fetchall()
 
 def extract_metadata(filename):
@@ -111,8 +110,6 @@ def register_routes(app):
 
             cur.close()
             conn.close()
-
-            is_admin = username == "admin"
 
             if user and not user[3]:
                 try:

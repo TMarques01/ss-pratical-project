@@ -1,5 +1,4 @@
 
-import os
 import subprocess
 import shlex
 
@@ -20,7 +19,7 @@ def build(*args):
 
 def prepare_query(sql, params):
     _log_query(sql, params)
-    return sql,params
+    return sql, params
 
 def _log_query(sql, params):
     try:
