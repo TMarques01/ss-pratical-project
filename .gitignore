@@ -53,3 +53,6 @@ web/uploads/*
 # Flask session files
 # -------------------------
 flask_session/
+
+zap-reports
+.zap/
