@@ -54,8 +54,5 @@ web/uploads/*
 # -------------------------
 flask_session/
 
-
-#--------------------------
-# Zap-reports
-#--------------------------
-zap-reports/
+zap-reports
+.zap/
