@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+
+<div align="right">
+  <form action="{{ url_for('shared_documents') }}" method="get" style="display:inline;">
+    <button type="submit">Shared Documents</button>
+  </form>
+</div>
+
 <p id="title-preview" class="muted"></p>
+
 <section class="grid">
   <div class="card">
     <h2>Upload document</h2>
@@ -18,6 +26,7 @@
   <div class="card">
     <h2>Documents</h2>
     <p class="muted">Showing documents for user id: {{ requested_user_id }}</p>
+
     {% if documents %}
     <table>
       <thead>
@@ -42,12 +51,16 @@
             </button>
           </td>
           <td>
-            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('document_details', document_id=doc.id) }}">
+            <button class="details-btn"
+                    onclick="window.location.href=this.dataset.url"
+                    data-url="{{ url_for('document_details', document_id=doc.id) }}">
               Details
             </button>
           </td>
           <td>
-            <button class="details-btn" onclick="window.location.href=this.dataset.url" data-url="{{ url_for('download_document', document_id=doc.id) }}">
+            <button class="details-btn"
+                    onclick="window.location.href=this.dataset.url"
+                    data-url="{{ url_for('download_document', document_id=doc.id) }}">
               Download
             </button>
           </td>
@@ -55,6 +68,7 @@
       {% endfor %}
       </tbody>
     </table>
+
     <div id="doc-details" class="card" style="display:none;">
       <h3>Document details</h3>
       <p id="doc-title"></p>
@@ -64,4 +78,5 @@
     {% endif %}
   </div>
 </section>
+
 {% endblock %}
