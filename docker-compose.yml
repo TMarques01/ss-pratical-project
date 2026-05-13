@@ -5,11 +5,17 @@ services:
       - "8000:8000"
     volumes:
       - ./web:/app
+    env_file:
+      - .env
     depends_on:
       - db
 
   db:
     build: ./db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
 

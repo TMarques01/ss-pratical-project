@@ -9,6 +9,10 @@ services:
 
   db:
     image: ${DB_IMAGE}
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
