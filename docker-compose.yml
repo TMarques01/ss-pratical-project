@@ -1,8 +1,19 @@
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - web
+
   web:
     build: ./web
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - ./web:/app
     env_file:
