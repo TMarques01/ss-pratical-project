@@ -240,9 +240,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }} # Token criado automáticamente, não é necessário que seja configurado
 
       - name: Set image tags
-        run: | # Está a criar as variávies da tag que as imagens serão guardadas
-          echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV" 
-          echo "DB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV"
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            SHA="${{ github.sha }}"
+          fi
+          echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
+          echo "DB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx # Tudo que está aqui para baixo é para construir as imagens e enviá-las para o GHRC
         uses: docker/setup-buildx-action@v4
