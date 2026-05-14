@@ -28,6 +28,12 @@ ph = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 ALLOWED_MIMES = {"application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
+
+LOG_DB_HOST = os.getenv("LOG_DB_HOST", "db-logs")
+LOG_DB_NAME = os.getenv("LOG_DB_NAME", "logsdb")
+LOG_DB_USER = os.getenv("LOG_DB_USER", "postgres")
+LOG_DB_PASSWORD = os.getenv("LOG_DB_PASSWORD", "postgres")
+
 def get_db():
     return psycopg2.connect(
         host=DB_HOST,
@@ -36,6 +42,29 @@ def get_db():
         password=DB_PASSWORD,
         dbname=DB_NAME,
     )
+
+def get_log_db():
+    return psycopg2.connect(
+        host=LOG_DB_HOST,
+        port=5432,
+        user=LOG_DB_USER,
+        password=LOG_DB_PASSWORD,
+        dbname=LOG_DB_NAME,
+    )
+
+def log_event(user_id, action, detail=""):
+    try:
+        conn = get_log_db()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO audit_logs (user_id, action, detail) VALUES (%s, %s, %s)",
+            (user_id, action, detail)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception:
+        pass 
 
 def create_app():
     app = flask.Flask(
@@ -120,12 +149,14 @@ def register_routes(app):
 
                     flask.session["user_id"] = user[0]
                     flask.session["username"] = user[1]
+                    log_event(user[0], "login_success", username)
                     if user[1] == "admin":
                         return flask.redirect(flask.url_for("admin_users"))
                     return flask.redirect(flask.url_for("documents_page"))
                 except VerifyMismatchError:
                     pass
 
+            log_event(None, "login_failure", username) 
             flask.flash("Invalid credentials.", "error")
 
         return flask.render_template("login.html")
@@ -244,7 +275,7 @@ def register_routes(app):
 
         cur.close()
         conn.close()
-
+        log_event(user_id, "document_upload", uploaded_file.filename)
         return flask.redirect(flask.url_for("documents_page", uploaded=title))
 
     @app.route("/admin/users/<int:user_id>/disable", methods=["POST"])
@@ -262,6 +293,7 @@ def register_routes(app):
         conn.close()
 
         flask.flash("User disabled.", "success")
+        log_event(flask.session.get("user_id"), "admin_action", f"disable user {user_id}")  
         return flask.redirect(flask.url_for("admin_users"))
 
     @app.route("/admin/users/<int:user_id>/enable", methods=["POST"])
@@ -279,6 +311,7 @@ def register_routes(app):
         conn.close()
 
         flask.flash("User enabled.", "success")
+        log_event(flask.session.get("user_id"), "admin_action", f"enable user {user_id}") 
         return flask.redirect(flask.url_for("admin_users"))
 
     @app.route("/admin/users")
@@ -343,7 +376,7 @@ def register_routes(app):
         if not file_path.exists():
             return "File not found", 404
         
-       
+        log_event(user_id, "document_access", str(document_id)) 
         return flask.send_file(str(file_path), as_attachment=True)
     
 
@@ -433,6 +466,7 @@ def register_routes(app):
                 VALUES (%s, %s)
             """, (document_id, shared_with))
             conn.commit()
+            log_event(user_id, "document_share", str(document_id))
             flask.flash("Document shared successfully.", "success")
         except psycopg2.Error:
             conn.rollback()
@@ -508,7 +542,7 @@ def register_routes(app):
 
         if not file_path.exists():
             return "File not found", 404
-
+        log_event(user_id, "document_access", f"shared:{document_id}") 
         return flask.send_file(str(file_path), as_attachment=True)
 
     @app.route("/health")

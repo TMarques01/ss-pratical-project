@@ -7,11 +7,27 @@ services:
       - ./web:/app
     depends_on:
       - db
+      - dblogs
+    environment:
+      - LOG_DB_HOST=dblogs
+      - LOG_DB_NAME=logsdb
+      - LOG_DB_USER=postgres
+      - LOG_DB_PASSWORD=postgres
 
   db:
     build: ./db
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  dblogs:
+    build: ./dblogs
+    volumes:
+      - pglogsdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=logsdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
 volumes:
   pgdata:
+  pglogsdata:
