@@ -20,6 +20,7 @@ def test_login_logout_flow():
     """
 
     session = requests.Session()
+    session.verify = False
 
     # ------------------------------------------------------------
     # Login
