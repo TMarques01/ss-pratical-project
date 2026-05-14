@@ -18,6 +18,6 @@ def wait_for_service(url: str, timeout: int = 30):
 
 
 def test_health_endpoint():
-    base_url = os.environ.get("BASE_URL", "http://localhost:8000")
+    base_url = os.environ.get("BASE_URL", "https://localhost")
     response = wait_for_service(f"{base_url}/health")
     assert response.json()["status"] == "ok"
