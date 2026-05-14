@@ -1,0 +1,4 @@
+# Placeholder API_KEY value committed in .env before .gitignore was in place.
+# Value "123456789abcdef" is not a real secret.
+40f87014d7ed4b498cbe3330cec7a13adc53aa5d:.env:generic-api-key:5
+03eed854553e42e49609c657d43ee27ca875ae3f:.env:generic-api-key:4
