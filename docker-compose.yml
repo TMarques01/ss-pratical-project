@@ -5,6 +5,8 @@ services:
       - "8000:8000"
     volumes:
       - ./web:/app
+    env_file:
+      - .env
     depends_on:
       - db
       - dblogs
