@@ -56,7 +56,6 @@ web/uploads/*
 flask_session/
 
 zap-reports
-.zap/
 
 
 #--------------------------
