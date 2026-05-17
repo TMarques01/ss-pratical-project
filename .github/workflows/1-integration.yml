@@ -60,6 +60,13 @@ jobs:
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo "API_KEY=${{ secrets.API_KEY }}" >> .env
 
+      - name: Restore SSL certificates
+        run: |
+          mkdir -p nginx/certs
+          echo "${{ secrets.NGINX_SSL_CERT }}" | base64 -d > nginx/certs/selfsigned.crt
+          echo "${{ secrets.NGINX_SSL_KEY }}"  | base64 -d > nginx/certs/selfsigned.key
+          chmod 600 nginx/certs/selfsigned.key
+
         # Startin the application inside the machine
       - name: Start application stack for validation
         env:
@@ -72,14 +79,13 @@ jobs:
           LOG_DB_PASSWORD: ${{ secrets.LOG_DB_PASSWORD }}
         run: |
           docker compose up -d --build
-    
-      
+
       - name: Wait for application # This is a health check. Waits 60 seconds until the application is ready. Prevent tests to for being executed in half way environment
         run: |
           timeout=60
           elapsed=0
 
-          until curl -fs http://localhost:8000/health > /dev/null; do
+          until curl -fsk https://localhost/health > /dev/null; do
             if [ "$elapsed" -ge "$timeout" ]; then
               echo "Application did not become ready within ${timeout}s"
               exit 1
@@ -243,10 +249,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }} # Token criado automáticamente, não é necessário que seja configurado
 
       - name: Set image tags
-        run: | # Está a criar as variávies da tag que as imagens serão guardadas
-          echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV"
-          echo "DB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV"
-          echo "DBLOGS_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DBLOGS_IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_ENV"
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            SHA="${{ github.sha }}"
+          fi
+          echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
+          echo "DB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
+          echo "DBLOGS_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DBLOGS_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx # Tudo que está aqui para baixo é para construir as imagens e enviá-las para o GHRC
         uses: docker/setup-buildx-action@v4

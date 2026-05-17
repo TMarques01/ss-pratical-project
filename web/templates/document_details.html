@@ -12,11 +12,13 @@
   <h3>Metadata</h3>
   <pre>{{ document.metadata }}</pre>
 
+  {% if session.user_id == document.owner_id %}
   <h3>Share Document</h3>
   <form method="post" action="{{ url_for('share_document', document_id=document.id) }}">
     <label>Share with user ID:</label>
     <input type="number" name="shared_with" required>
     <button type="submit">Share</button>
   </form>
+  {% endif %}
 </div>
 {% endblock %}

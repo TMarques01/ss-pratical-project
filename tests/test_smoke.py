@@ -8,7 +8,7 @@ def wait_for_service(url: str, timeout: int = 30):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            response = requests.get(url, timeout=2)
+            response = requests.get(url, timeout=2, verify=False)
             if response.ok:
                 return response
         except requests.RequestException:
@@ -18,6 +18,6 @@ def wait_for_service(url: str, timeout: int = 30):
 
 
 def test_health_endpoint():
-    base_url = os.environ.get("BASE_URL", "http://localhost:8000")
+    base_url = os.environ.get("BASE_URL", "https://localhost")
     response = wait_for_service(f"{base_url}/health")
     assert response.json()["status"] == "ok"

@@ -57,3 +57,9 @@ flask_session/
 
 zap-reports
 .zap/
+
+
+#--------------------------
+# Nginx certificates
+#--------------------------
+certs/

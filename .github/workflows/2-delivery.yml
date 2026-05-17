@@ -74,6 +74,13 @@ jobs:
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo "API_KEY=${{ secrets.API_KEY }}" >> .env
 
+      - name: Restore SSL certificates
+        run: |
+          mkdir -p nginx/certs
+          echo "${{ secrets.NGINX_SSL_CERT }}" | base64 -d > nginx/certs/selfsigned.crt
+          echo "${{ secrets.NGINX_SSL_KEY }}"  | base64 -d > nginx/certs/selfsigned.key
+          chmod 600 nginx/certs/selfsigned.key
+
       - name: Start delivery environment
         env:
           WEB_IMAGE: ${{ env.WEB_IMAGE }}
@@ -94,7 +101,7 @@ jobs:
           timeout=60
           elapsed=0
 
-          until curl -fs http://localhost:8000/health > /dev/null; do
+          until curl -fsk https://localhost/health > /dev/null; do
             if [ "$elapsed" -ge "$timeout" ]; then
               echo "Application did not become ready within ${timeout}s"
               exit 1
@@ -109,7 +116,7 @@ jobs:
 
       - name: Verify application health
         run: |
-          curl -f http://localhost:8000/health
+          curl -fsk https://localhost/health
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -123,14 +130,14 @@ jobs:
 
       - name: Run delivery authentication flow test
         env:
-          APP_BASE_URL: http://localhost:8000
+          APP_BASE_URL: https://localhost
         run: |
           pytest -q tests/test_delivery_auth_flow.py
 
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: "http://127.0.0.1:8000"
+          target: "https://127.0.0.1"
           fail_action: true
           allow_issue_writing: false
 
