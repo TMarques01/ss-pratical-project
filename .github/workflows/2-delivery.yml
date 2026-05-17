@@ -130,8 +130,10 @@ jobs:
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: "https://127.0.0.1"
+          rules_file_name: '.zap/rules.tsv'
           fail_action: true
           allow_issue_writing: false
+
 
       - name: Promote validated images to dev
         if: success()
