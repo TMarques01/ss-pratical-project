@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="card">
   <h2>Document details</h2>
 

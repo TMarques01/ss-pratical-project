@@ -12,6 +12,7 @@ from . import utils
 from werkzeug.utils import secure_filename
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 dotenv.load_dotenv()
 
@@ -81,23 +82,9 @@ def create_app():
 
     app.config["SESSION_TYPE"] = "filesystem"
 
-    app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
-    app.config["SESSION_COOKIE_SECURE"] = True
-    app.config["SESSION_COOKIE_HTTPONLY"] = True 
-    
     Session(app)
 
-    @app.before_request
-    def check_csrf_origin():
-        if flask.request.method == "POST":
-            origin = flask.request.headers.get("Origin")
-            referer = flask.request.headers.get("Referer")
-
-            allowed_host = flask.request.host  # ex: "localhost" ou "yourdomain.com"
-
-            source = origin or referer
-            if not source or allowed_host not in source:
-                flask.abort(403)
+    CSRFProtect(app)
 
     @app.after_request
     def set_security_headers(response):

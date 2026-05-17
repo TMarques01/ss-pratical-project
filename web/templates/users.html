@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <section class="card">
   <h2>Registered users</h2>
   <table>
