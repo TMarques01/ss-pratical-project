@@ -82,6 +82,10 @@ def create_app():
 
     app.config["SESSION_TYPE"] = "filesystem"
 
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+
     Session(app)
 
     CSRFProtect(app)
@@ -102,6 +106,17 @@ def create_app():
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+        response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+        response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+        response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+        response.headers['Permissions-Policy'] = (
+            'geolocation=(), microphone=(), camera=(), '
+            'payment=(), usb=(), interest-cohort=()'
+        )
+        response.headers['Strict-Transport-Security'] = (
+            'max-age=31536000; includeSubDomains'
+        )
 
         return response
 
