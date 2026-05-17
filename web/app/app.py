@@ -10,8 +10,10 @@ import magic
 from . import db
 from . import utils
 from werkzeug.utils import secure_filename
+from flask_wtf.csrf import CSRFProtect
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 dotenv.load_dotenv()
 
