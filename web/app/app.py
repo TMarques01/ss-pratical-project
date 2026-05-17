@@ -10,10 +10,9 @@ import magic
 from . import db
 from . import utils
 from werkzeug.utils import secure_filename
-from flask_wtf.csrf import CSRFProtect
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf.csrf import CSRFProtect
 
 dotenv.load_dotenv()
 
