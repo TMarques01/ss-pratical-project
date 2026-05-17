@@ -10,6 +10,7 @@ import magic
 from . import db
 from . import utils
 from werkzeug.utils import secure_filename
+from flask_wtf.csrf import CSRFProtect
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
@@ -80,7 +81,8 @@ def create_app():
 
     app.config["SESSION_TYPE"] = "filesystem"
     Session(app)
-
+    CSRFProtect(app)
+    
     register_routes(app)
 
     return app
