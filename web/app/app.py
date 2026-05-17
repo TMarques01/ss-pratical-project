@@ -322,13 +322,13 @@ def register_routes(app):
             INSERT INTO documents (owner_id, title, filename, metadata)
             VALUES (%s, %s, %s, %s)
             """,
-            (user_id, title, uploaded_file.filename, metadata),
+            (user_id, title, filename, metadata),
         )
         conn.commit()
 
         cur.close()
         conn.close()
-        log_event(user_id, "document_upload", uploaded_file.filename)
+        log_event(user_id, "document_upload", filename)
         return flask.redirect(flask.url_for("documents_page", uploaded=title))
 
     @app.route("/admin/users/<int:user_id>/disable", methods=["POST"])
