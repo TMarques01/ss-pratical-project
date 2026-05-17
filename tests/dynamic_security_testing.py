@@ -107,7 +107,7 @@ class TestAuthentication:
     def test_valid_login_grants_access(self):
         s = safe_login(ALICE)
         r = s.get(url("/documents"), allow_redirects=False, timeout=10)
-        assert r.status_code == 200
+        assert r.status_code == 200,
 
     def test_invalid_password_rejected(self):
         time.sleep(13)
