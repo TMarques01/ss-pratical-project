@@ -22,7 +22,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 BASE_URL = os.getenv("APP_BASE_URL", "https://localhost")
 
 ALICE = {"username": "alice", "password": "tth1mJj5?£58"}
-BOB   = {"username": "bob",   "password": "De586:Iq6}?!"}
+BOB = {"username": "bob", "password": "De586:Iq6}?!"}
 ADMIN = {"username": "admin", "password": "L|fP1D%327mB"}
 
 
@@ -169,11 +169,11 @@ class TestAuthentication:
 class TestSQLInjection:
 
     SQL_PAYLOADS = [
-        ("' OR '1'='1",               "qualquer"),
-        ("' OR 1=1--",                 "qualquer"),
-        ("admin'--",                   "qualquer"),
-        ("admin' OR 'x'='x",          "qualquer"),
-        ("' UNION SELECT 1,2,3,4--",  "qualquer"),
+        ("' OR '1'='1", "qualquer"),
+        ("' OR 1=1--", "qualquer"),
+        ("admin'--", "qualquer"),
+        ("admin' OR 'x'='x", "qualquer"),
+        ("' UNION SELECT 1,2,3,4--", "qualquer"),
     ]
 
     @pytest.mark.parametrize("username,password", SQL_PAYLOADS)
