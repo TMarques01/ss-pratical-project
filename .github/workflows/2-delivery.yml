@@ -144,7 +144,6 @@ jobs:
           ZAP_PASS: ${{ secrets.ZAP_PASS }}
         with:
           plan: '.zap/af-baseline.yaml'
-          allow_issue_writing: false
 
       - name: Promote validated images to dev
         if: success()
