@@ -1,5 +1,6 @@
 import os
 import requests
+import re
 
 BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:8000")
 
@@ -22,14 +23,26 @@ def test_login_logout_flow():
     session = requests.Session()
     session.verify = False
 
-    # ------------------------------------------------------------
-    # Login
-    # ------------------------------------------------------------
+# ------------------------------------------------------------
+# Login
+# ------------------------------------------------------------
+    login_page = session.get(
+        _url("/login"),
+        timeout=10,
+        verify=False,
+    )
+
+    csrf_token = re.search(
+        r'<input[^>]+name="csrf_token"[^>]+value="([^"]+)"',
+        login_page.text
+    ).group(1)
+
     login_resp = session.post(
         _url("/login"),
         data={
             "username": "alice",
             "password": "tth1mJj5?£58",
+            "csrf_token": csrf_token,
         },
         allow_redirects=False,
         timeout=10,
