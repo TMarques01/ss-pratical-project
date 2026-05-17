@@ -80,7 +80,24 @@ def create_app():
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
     app.config["SESSION_TYPE"] = "filesystem"
+
+    app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_HTTPONLY"] = True 
+    
     Session(app)
+
+    @app.before_request
+    def check_csrf_origin():
+        if flask.request.method == "POST":
+            origin = flask.request.headers.get("Origin")
+            referer = flask.request.headers.get("Referer")
+
+            allowed_host = flask.request.host  # ex: "localhost" ou "yourdomain.com"
+
+            source = origin or referer
+            if not source or allowed_host not in source:
+                flask.abort(403)
 
     @app.after_request
     def set_security_headers(response):
@@ -98,7 +115,7 @@ def create_app():
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        
+
         return response
 
     register_routes(app)
