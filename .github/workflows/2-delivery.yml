@@ -134,13 +134,24 @@ jobs:
         run: |
           pytest -q tests/test_delivery_auth_flow.py
 
+      - name: Create ZAP rules file
+        run: |
+          cat > zap-rules.tsv << 'EOF'
+          10015	IGNORE	(Re-examine Cache-control Directives)
+          10031	IGNORE	(User Controllable HTML Element Attribute)
+          10049	IGNORE	(Non-Storable Content)
+          10109	IGNORE	(Modern Web Application)
+          10111	IGNORE	(Authentication Request Identified)
+          10112	IGNORE	(Session Management Response Identified)
+          EOF
+
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: "https://127.0.0.1"
           fail_action: true
           allow_issue_writing: false
-          cmd_options: '-l FAIL'
+          rules_file_name: 'zap-rules.tsv'
 
       - name: Promote validated images to dev
         if: success()
