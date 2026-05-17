@@ -54,3 +54,8 @@ jobs:
       template: traditional-html
       reportDir: /zap/wrk
       reportFile: zap_auth_baseline_report
+  
+  - type: exitStatus
+    parameters:
+      failOnError: true
+      failOnWarning: false
