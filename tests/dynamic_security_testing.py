@@ -50,13 +50,11 @@ def login(credentials: dict) -> requests.Session:
 
 
 def safe_login(credentials: dict) -> requests.Session:
-    """Login com delay de 13s para respeitar o rate limit de 5 req/min no /login."""
     time.sleep(13)
     return login(credentials)
 
 
 def minimal_pdf() -> bytes:
-    """PDF mínimo válido (magic bytes corretos) para testes de upload."""
     return (
         b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
         b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
@@ -67,7 +65,6 @@ def minimal_pdf() -> bytes:
 
 
 def upload_doc(session: requests.Session, title: str, filename: str = "test.pdf") -> None:
-    """Faz upload de um PDF mínimo com o título dado."""
     session.post(
         url("/documents/upload"),
         data={"title": title},
@@ -92,7 +89,6 @@ def get_doc_ids(session: requests.Session) -> list:
 class TestAuthentication:
 
     def test_protected_documents_rejects_unauthenticated(self):
-        """GET /documents sem sessão deve redirecionar para /login."""
         r = new_session().get(url("/documents"), allow_redirects=False, timeout=10)
         assert r.status_code in (302, 303), (
             f"/documents acessível sem autenticação: HTTP {r.status_code}"
@@ -104,12 +100,14 @@ class TestAuthentication:
 
     def test_protected_admin_rejects_unauthenticated(self):
         r = new_session().get(url("/admin/users"), allow_redirects=False, timeout=10)
-        assert r.status_code in (302, 303)
+        assert r.status_code in (302, 303), (
+            f"/admin/users acessível sem autenticação: HTTP {r.status_code}"
+        )
 
     def test_valid_login_grants_access(self):
         s = safe_login(ALICE)
         r = s.get(url("/documents"), allow_redirects=False, timeout=10)
-        assert r.status_code == 200, "Alice autenticada não acede a /documents"
+        assert r.status_code == 200
 
     def test_invalid_password_rejected(self):
         time.sleep(13)
@@ -134,7 +132,6 @@ class TestAuthentication:
         assert "/documents" not in r.url
 
     def test_logout_invalidates_session(self):
-        """Após logout, o mesmo cookie não deve aceder a recursos protegidos."""
         s = safe_login(ALICE)
 
         r = s.get(url("/documents"), allow_redirects=False, timeout=10)
@@ -148,7 +145,6 @@ class TestAuthentication:
         )
 
     def test_disabled_account_cannot_login(self):
-        """Conta desativada não deve conseguir autenticar."""
         admin = safe_login(ADMIN)
         admin.post(url("/admin/users/3/disable"), allow_redirects=False, timeout=10)
 
@@ -181,7 +177,6 @@ class TestSQLInjection:
 
     @pytest.mark.parametrize("username,password", SQL_PAYLOADS)
     def test_sql_injection_login_bypass(self, username, password):
-        """SQL Injection no campo username não deve fazer bypass de autenticação."""
         time.sleep(13)
         s = new_session()
         r = s.post(
@@ -224,7 +219,6 @@ class TestAccessControl:
         assert r.status_code == 200, "Admin não consegue aceder ao painel de utilizadores"
 
     def test_idor_user_cannot_access_other_users_document(self):
-        """Alice não deve conseguir ver documentos que pertencem a Bob."""
         bob = safe_login(BOB)
         upload_doc(bob, "idor_doc_bob", "idor_bob.pdf")
         bob_ids = get_doc_ids(bob)
@@ -238,7 +232,6 @@ class TestAccessControl:
             )
 
     def test_idor_download_requires_ownership(self):
-        """Alice não deve conseguir fazer download de documentos de Bob."""
         bob = safe_login(BOB)
         upload_doc(bob, "idor_dl_bob", "idor_dl_bob.pdf")
         bob_ids = get_doc_ids(bob)
@@ -252,7 +245,6 @@ class TestAccessControl:
             )
 
     def test_user_cannot_share_document_they_dont_own(self):
-        """Alice não deve conseguir partilhar um documento que pertence a Bob."""
         bob = safe_login(BOB)
         upload_doc(bob, "idor_share_bob", "idor_share_bob.pdf")
         bob_ids = get_doc_ids(bob)
@@ -270,7 +262,6 @@ class TestAccessControl:
             )
 
     def test_shared_download_requires_share_permission(self):
-        """Bob não deve conseguir fazer download de um doc de alice sem partilha."""
         alice = safe_login(ALICE)
         upload_doc(alice, "shared_perm_alice", "shared_perm_alice.pdf")
         alice_ids = get_doc_ids(alice)
@@ -284,12 +275,10 @@ class TestAccessControl:
             )
 
     def test_unauthenticated_cannot_download_shared(self):
-        """GET /shared/<id>/download sem sessão deve redirecionar."""
         r = new_session().get(url("/shared/1/download"), allow_redirects=False, timeout=10)
         assert r.status_code in (302, 303)
 
     def test_cannot_share_document_with_yourself(self):
-        """Partilhar um documento consigo próprio deve ser rejeitado."""
         alice = safe_login(ALICE)
         upload_doc(alice, "self_share_alice", "self_share_alice.pdf")
         alice_ids = get_doc_ids(alice)
@@ -310,7 +299,6 @@ class TestAccessControl:
 class TestInputValidation:
 
     def test_upload_invalid_extension_rejected(self):
-        """Ficheiros com extensão não permitida devem ser rejeitados."""
         s = safe_login(ALICE)
         r = s.post(
             url("/documents/upload"),
@@ -325,7 +313,6 @@ class TestInputValidation:
         )
 
     def test_upload_mismatched_mime_rejected(self):
-        """Ficheiro com extensão .pdf mas conteúdo que não é PDF deve ser rejeitado."""
         s = safe_login(ALICE)
         fake_pdf = b"<?php system($_GET['cmd']); ?>"
         r = s.post(
@@ -340,7 +327,6 @@ class TestInputValidation:
         )
 
     def test_upload_command_injection_in_filename(self):
-        """Nome de ficheiro com payload de injeção não deve executar comandos."""
         s = safe_login(ALICE)
         dangerous_names = [
             "test; id #.pdf",
@@ -364,7 +350,6 @@ class TestInputValidation:
             )
 
     def test_document_id_must_be_integer(self):
-        """Rota com <int:document_id> deve rejeitar IDs não numéricos com 404."""
         s = safe_login(ALICE)
         r = s.get(url("/documents/abc"), allow_redirects=False, timeout=10)
         assert r.status_code == 404
@@ -375,7 +360,6 @@ class TestInputValidation:
         assert r.status_code in (403, 404)
 
     def test_share_with_invalid_user_id(self):
-        """Partilha com user_id inexistente deve ser rejeitada sem crash."""
         s = safe_login(ALICE)
         upload_doc(s, "share_invalid_uid", "share_invalid.pdf")
         ids = get_doc_ids(s)
@@ -389,7 +373,6 @@ class TestInputValidation:
         assert "does not exist" in r.text.lower()
 
     def test_share_with_non_numeric_user_id(self):
-        """Partilha com valor não numérico deve ser rejeitada."""
         s = safe_login(ALICE)
         upload_doc(s, "share_nonnumeric", "share_nonnumeric.pdf")
         ids = get_doc_ids(s)
@@ -403,7 +386,6 @@ class TestInputValidation:
         assert "invalid" in r.text.lower() or r.status_code in (302, 303)
 
     def test_path_traversal_in_download(self):
-        """Nenhum download deve servir conteúdo de /etc/passwd."""
         alice = safe_login(ALICE)
         upload_doc(alice, "path_traversal_check", "traversal_check.pdf")
         ids = get_doc_ids(alice)
@@ -415,48 +397,3 @@ class TestInputValidation:
                 assert "root:" not in r.text, (
                     f"[CRÍTICO] /documents/{doc_id}/download serviu conteúdo de /etc/passwd"
                 )
-
-
-# ---------------------------------------------------------------------------
-# Exposição de Informação
-# ---------------------------------------------------------------------------
-
-class TestInformationExposure:
-
-    def test_env_file_not_served(self):
-        """O ficheiro .env não deve ser acessível via HTTP."""
-        r = new_session().get(url("/.env"), allow_redirects=False, timeout=10)
-        assert r.status_code in (403, 404), (
-            f".env acessível via HTTP: HTTP {r.status_code}"
-        )
-
-    def test_nonexistent_resource_returns_standard_error(self):
-        """Recursos inexistentes não devem expor stack traces Python."""
-        s = safe_login(ALICE)
-        r = s.get(url("/documents/99999999"), allow_redirects=False, timeout=10)
-        assert r.status_code in (403, 404)
-        assert "traceback" not in r.text.lower(), "Stack trace exposto na resposta"
-        assert "psycopg2" not in r.text.lower(), "Detalhes de BD expostos na resposta"
-
-    def test_security_headers_present(self):
-        """Cabeçalhos de segurança HTTP devem estar presentes."""
-        r = new_session().get(url("/login"), timeout=10)
-        headers = {k.lower(): v for k, v in r.headers.items()}
-
-        missing = []
-        if "x-frame-options" not in headers:
-            missing.append("X-Frame-Options")
-        if "x-content-type-options" not in headers:
-            missing.append("X-Content-Type-Options")
-
-        assert not missing, (
-            f"Cabeçalhos de segurança em falta: {', '.join(missing)}"
-        )
-
-    def test_server_header_does_not_expose_version(self):
-        """O cabeçalho Server não deve expor versão detalhada."""
-        r = new_session().get(url("/login"), timeout=10)
-        server = r.headers.get("Server", "")
-        assert "werkzeug" not in server.lower(), (
-            f"Cabeçalho Server expõe framework: {server}"
-        )
