@@ -3,4 +3,4 @@
 10109	IGNORE	(Modern Web Application)
 10111	IGNORE	(Authentication Request Identified)
 10112	IGNORE	(Session Management Response Identified)
-10031	IGNORE	(User Controllable HTML Element Attribute)
+10031	IGNORE  (User Controllable HTML Element Attribute)
