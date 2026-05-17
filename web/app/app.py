@@ -399,6 +399,12 @@ def register_routes(app):
             return flask.redirect(
                 flask.url_for("document_details", document_id=document_id)
             )
+        
+        if shared_with == user_id:
+            flask.flash("Cannot share documents with yourself.", "error")
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
 
         if shared_with == 1:
             flask.flash("Cannot share documents with this user.", "error")
