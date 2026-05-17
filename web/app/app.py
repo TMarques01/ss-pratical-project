@@ -159,6 +159,14 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
+def user_required(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        if flask.session.get("username") == "admin":
+            flask.abort(403)
+        return fn(*args, **kwargs)
+    return wrapper
+
 def register_routes(app):
 
     @app.route("/")
@@ -210,6 +218,7 @@ def register_routes(app):
 
     @app.route("/documents/<int:document_id>")
     @login_required
+    @user_required
     def document_details(document_id):
         current_user_id = flask.session.get("user_id")
         conn = get_db()
@@ -248,6 +257,7 @@ def register_routes(app):
 
     @app.route("/documents")
     @login_required
+    @user_required
     def documents_page():
         
         current_user_id = flask.session.get("user_id")
@@ -272,6 +282,7 @@ def register_routes(app):
 
     @app.route("/documents/upload", methods=["POST"])
     @login_required
+    @user_required
     def upload_document():
         user_id = flask.session.get("user_id")
         title = flask.request.form.get("title", "Untitled")
@@ -384,6 +395,7 @@ def register_routes(app):
 
     @app.route("/documents/<int:document_id>/download")
     @login_required
+    @user_required
     def download_document(document_id):
         user_id = flask.session.get("user_id")
 
@@ -424,6 +436,7 @@ def register_routes(app):
 
     @app.route("/documents/<int:document_id>/share", methods=["POST"])
     @login_required
+    @user_required
     def share_document(document_id):
         user_id = flask.session.get("user_id")
         shared_with = flask.request.form.get("shared_with")
@@ -531,6 +544,7 @@ def register_routes(app):
 
     @app.route("/shared")
     @login_required
+    @user_required
     def shared_documents():
         user_id = flask.session.get("user_id")
 
@@ -564,6 +578,7 @@ def register_routes(app):
     
     @app.route("/shared/<int:document_id>/download")
     @login_required
+    @user_required
     def download_shared_document(document_id):
         user_id = flask.session.get("user_id")
 
