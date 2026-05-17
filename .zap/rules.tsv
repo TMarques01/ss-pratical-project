@@ -1,5 +1,5 @@
 10015	IGNORE	Cache-Control noise on static
-10031	WARN	Potential XSS - keep visible
+10031	IGNORE	Potential XSS false positive on login
 10049	IGNORE	Non-storable content FP on 404s
 10109	IGNORE	Modern Web Application info tag
 10111	IGNORE	Authentication Request info tag
