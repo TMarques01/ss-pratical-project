@@ -137,11 +137,13 @@ jobs:
         run: |
           pytest -q tests/test_delivery_auth_flow.py
 
-      - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.15.0
+      - name: Run OWASP ZAP Baseline Scan (authenticated)
+        uses: zaproxy/action-af@v0.2.0
+        env:
+          ZAP_USER: ${{ secrets.ZAP_USER }}
+          ZAP_PASS: ${{ secrets.ZAP_PASS }}
         with:
-          target: "https://127.0.0.1"
-          fail_action: true
+          plan: '.zap/af-baseline.yaml'
           allow_issue_writing: false
 
       - name: Promote validated images to dev
