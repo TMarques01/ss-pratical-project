@@ -82,7 +82,7 @@ def create_app():
 
     app.config["SESSION_TYPE"] = "filesystem"
     Session(app)
-    pp.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     CSRFProtect(app)
     register_routes(app)
 
