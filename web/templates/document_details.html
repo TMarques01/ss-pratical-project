@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="card">
   <h2>Document details</h2>
 
@@ -15,7 +16,6 @@
   {% if session.user_id == document.owner_id %}
   <h3>Share Document</h3>
   <form method="post" action="{{ url_for('share_document', document_id=document.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Share with user ID:</label>
     <input type="number" name="shared_with" required>
     <button type="submit">Share</button>
