@@ -68,11 +68,6 @@ def log_event(user_id, action, detail=""):
     except Exception:
         pass 
 
-def generate_csrf_token():
-    if 'csrf_token' not in flask.session:
-        flask.session['csrf_token'] = secrets.token_hex(32)
-    return flask.session['csrf_token']
-
 def create_app():
     app = flask.Flask(
         __name__,
