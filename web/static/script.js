@@ -19,22 +19,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const buttons = document.querySelectorAll(".details-btn");
 
-  buttons.forEach(btn => {
+    buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
 
-    btn.addEventListener("click", () => {
+            if (btn.dataset.url) {
+                window.location.href = btn.dataset.url;
+                return;
+            }
 
-      const title = btn.dataset.title;
-
-      const details = document.getElementById("doc-details");
-      const titleField = document.getElementById("doc-title");
-
-      details.style.display = "block";
-
-      renderTitle(title)
-
+            const title = btn.dataset.title;
+            const details = document.getElementById("doc-details");
+            details.style.display = "block";
+            renderTitle(title);
+        });
     });
-
-  });
 
     function renderTitle(title) {
       const el = document.getElementById("doc-title");
