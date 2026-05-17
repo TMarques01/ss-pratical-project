@@ -17,11 +17,16 @@ dotenv.load_dotenv()
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
 
-DB_HOST = os.getenv("DB_HOST", "db")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
-DB_NAME = os.getenv("DB_NAME", "docdb")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
+LOG_DB_HOST = os.getenv("LOG_DB_HOST")
+LOG_DB_NAME = os.getenv("LOG_DB_NAME")
+LOG_DB_USER = os.getenv("LOG_DB_USER")
+LOG_DB_PASSWORD = os.getenv("LOG_DB_PASSWORD")
 
 UPLOAD_FOLDER = "uploads"
 ph = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
@@ -29,10 +34,6 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 ALLOWED_MIMES = {"application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 
-LOG_DB_HOST = os.getenv("LOG_DB_HOST", "db-logs")
-LOG_DB_NAME = os.getenv("LOG_DB_NAME", "logsdb")
-LOG_DB_USER = os.getenv("LOG_DB_USER", "postgres")
-LOG_DB_PASSWORD = os.getenv("LOG_DB_PASSWORD", "postgres")
 
 def get_db():
     return psycopg2.connect(
