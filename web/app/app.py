@@ -82,9 +82,30 @@ def create_app():
     app.config["SESSION_TYPE"] = "filesystem"
     Session(app)
 
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "object-src 'none'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        
+        return response
+
     register_routes(app)
 
     return app
+
+
 
 def get_documents_for_user(cur, owner_id):
     query, params = utils.prepare_query("""
