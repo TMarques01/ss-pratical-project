@@ -1,5 +1,6 @@
-10015	IGNORE	(Re-examine Cache-control Directives)
+﻿10015	IGNORE	(Re-examine Cache-control Directives)
 10049	IGNORE	(Non-Storable Content)
 10109	IGNORE	(Modern Web Application)
 10111	IGNORE	(Authentication Request Identified)
 10112	IGNORE	(Session Management Response Identified)
+10031	IGNORE	(User Controllable HTML Element Attribute)
