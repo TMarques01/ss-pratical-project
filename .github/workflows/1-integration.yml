@@ -16,6 +16,7 @@ env:
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
   WEB_IMAGE_NAME: secure-doc-platform-web
   DB_IMAGE_NAME: secure-doc-platform-db
+  DBLOGS_IMAGE_NAME: secure-doc-platform-dblogs
 
 jobs:
 
@@ -68,6 +69,14 @@ jobs:
 
         # Startin the application inside the machine
       - name: Start application stack for validation
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          LOG_DB_NAME: ${{ secrets.LOG_DB_NAME }}
+          LOG_DB_USER: ${{ secrets.LOG_DB_USER }}
+          LOG_DB_PASSWORD: ${{ secrets.LOG_DB_PASSWORD }}
         run: |
           docker compose up -d --build
 
@@ -248,6 +257,7 @@ jobs:
           fi
           echo "WEB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
           echo "DB_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
+          echo "DBLOGS_SHA_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DBLOGS_IMAGE_NAME }}:${SHA}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx # Tudo que está aqui para baixo é para construir as imagens e enviá-las para o GHRC
         uses: docker/setup-buildx-action@v4
@@ -338,4 +348,45 @@ jobs:
         with:
           image: ${{ env.DB_SHA_TAG }}
           output-file: sbom_DB-${{ github.sha }}.cdx.json
+          format: cyclonedx-json
+
+      - name: Build and push dblogs image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./dblogs
+          push: true
+          tags: |
+            ${{ env.DBLOGS_SHA_TAG }}
+          provenance: false
+
+      - name: Scan DBLOGS Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DBLOGS_SHA_TAG }}
+          output: 'results/trivy-dblogs-report.txt'
+          format: 'table'
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
+      - name: Generate Trivy DBLOGS Docker Image Summary
+        if: always()
+        run: |
+          if [ -f results/trivy-dblogs-report.txt ]; then
+            echo "### Trivy DBLOGS Scan Results ###"
+            cat results/trivy-dblogs-report.txt
+          fi
+
+      - name: Upload Trivy DBLOGS report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-dblogs-report-${{ github.sha }}
+          path: results/trivy-dblogs-report.txt
+
+      - name: Generate SBOM for DBLOGS Docker image
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DBLOGS_SHA_TAG }}
+          output-file: sbom_DBLOGS-${{ github.sha }}.cdx.json
           format: cyclonedx-json

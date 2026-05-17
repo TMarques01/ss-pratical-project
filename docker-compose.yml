@@ -20,15 +20,36 @@ services:
       - .env
     depends_on:
       - db
+      - dblogs
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - LOG_DB_HOST=dblogs
+      - LOG_DB_NAME=${LOG_DB_NAME}
+      - LOG_DB_USER=${LOG_DB_USER}
+      - LOG_DB_PASSWORD=${LOG_DB_PASSWORD}
 
   db:
     build: ./db
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  dblogs:
+    build: ./dblogs
+    environment:
+      - POSTGRES_DB=${LOG_DB_NAME}
+      - POSTGRES_USER=${LOG_DB_USER}
+      - POSTGRES_PASSWORD=${LOG_DB_PASSWORD}
+    volumes:
+      - pglogsdata:/var/lib/postgresql/data
+
 volumes:
   pgdata:
+  pglogsdata:
