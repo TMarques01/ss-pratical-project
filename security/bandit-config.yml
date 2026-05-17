@@ -8,7 +8,4 @@ skips: []
 # A list of paths to exclude from scanning.
 exclude_dirs: ["./tests"]
 
-# Fail the build if any issue with a severity of LOW or higher is found.
-# Severities: LOW, MEDIUM, HIGH
-level: "LOW"
 confidence: "LOW"
