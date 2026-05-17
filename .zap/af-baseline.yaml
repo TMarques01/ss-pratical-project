@@ -29,6 +29,7 @@ env:
             password: ${ZAP_PASS}
   parameters:
     failOnError: true
+    failOnWarning: false
     progressToStdout: true
 
 jobs:
