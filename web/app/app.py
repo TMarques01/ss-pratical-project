@@ -12,16 +12,22 @@ from . import utils
 from werkzeug.utils import secure_filename
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from flask_wtf.csrf import CSRFProtect
 
 dotenv.load_dotenv()
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
 
-DB_HOST = os.getenv("DB_HOST", "db")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
-DB_NAME = os.getenv("DB_NAME", "docdb")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
+LOG_DB_HOST = os.getenv("LOG_DB_HOST")
+LOG_DB_NAME = os.getenv("LOG_DB_NAME")
+LOG_DB_USER = os.getenv("LOG_DB_USER")
+LOG_DB_PASSWORD = os.getenv("LOG_DB_PASSWORD")
 
 UPLOAD_FOLDER = "uploads"
 ph = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
@@ -29,10 +35,6 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 ALLOWED_MIMES = {"application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 
-LOG_DB_HOST = os.getenv("LOG_DB_HOST", "db-logs")
-LOG_DB_NAME = os.getenv("LOG_DB_NAME", "logsdb")
-LOG_DB_USER = os.getenv("LOG_DB_USER", "postgres")
-LOG_DB_PASSWORD = os.getenv("LOG_DB_PASSWORD", "postgres")
 
 def get_db():
     return psycopg2.connect(
@@ -79,11 +81,35 @@ def create_app():
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
     app.config["SESSION_TYPE"] = "filesystem"
+
     Session(app)
+
+    CSRFProtect(app)
+
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "object-src 'none'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+        return response
 
     register_routes(app)
 
     return app
+
+
 
 def get_documents_for_user(cur, owner_id):
     query, params = utils.prepare_query("""
@@ -396,6 +422,12 @@ def register_routes(app):
             shared_with = int(shared_with)
         except ValueError:
             flask.flash("Invalid user ID.", "error")
+            return flask.redirect(
+                flask.url_for("document_details", document_id=document_id)
+            )
+        
+        if shared_with == user_id:
+            flask.flash("Cannot share documents with yourself.", "error")
             return flask.redirect(
                 flask.url_for("document_details", document_id=document_id)
             )
