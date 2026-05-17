@@ -136,14 +136,13 @@ jobs:
 
       - name: Create ZAP rules file
         run: |
-          cat > zap-rules.tsv << 'EOF'
-          10015	IGNORE	(Re-examine Cache-control Directives)
-          10031	IGNORE	(User Controllable HTML Element Attribute)
-          10049	IGNORE	(Non-Storable Content)
-          10109	IGNORE	(Modern Web Application)
-          10111	IGNORE	(Authentication Request Identified)
-          10112	IGNORE	(Session Management Response Identified)
-          EOF
+          printf '10015\tIGNORE\t(Re-examine Cache-control Directives)\n' > zap-rules.tsv
+          printf '10031\tIGNORE\t(User Controllable HTML Element Attribute)\n' >> zap-rules.tsv
+          printf '10049\tIGNORE\t(Non-Storable Content)\n' >> zap-rules.tsv
+          printf '10109\tIGNORE\t(Modern Web Application)\n' >> zap-rules.tsv
+          printf '10111\tIGNORE\t(Authentication Request Identified)\n' >> zap-rules.tsv
+          printf '10112\tIGNORE\t(Session Management Response Identified)\n' >> zap-rules.tsv
+          cat zap-rules.tsv
 
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
