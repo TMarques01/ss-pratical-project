@@ -140,7 +140,7 @@ jobs:
           target: "https://127.0.0.1"
           fail_action: true
           allow_issue_writing: false
-          cmd_options: '-I -j'
+          cmd_options: '-l FAIL'
 
       - name: Promote validated images to dev
         if: success()
