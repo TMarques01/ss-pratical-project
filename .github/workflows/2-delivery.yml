@@ -73,6 +73,9 @@ jobs:
           echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo "API_KEY=${{ secrets.API_KEY }}" >> .env
+          echo "LOG_DB_USER=${{ secrets.LOG_DB_USER }}" >> .env
+          echo "LOG_DB_PASSWORD=${{ secrets.LOG_DB_PASSWORD }}" >> .env
+          echo "LOG_DB_NAME=${{ secrets.LOG_DB_NAME }}" >> .env
 
       - name: Restore SSL certificates
         run: |
