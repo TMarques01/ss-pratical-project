@@ -10,10 +10,10 @@ import magic
 from . import db
 from . import utils
 from werkzeug.utils import secure_filename
-from flask_wtf.csrf import CSRFProtect
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from werkzeug.middleware.proxy_fix import ProxyFix
+import secrets
 
 dotenv.load_dotenv()
 
@@ -68,6 +68,11 @@ def log_event(user_id, action, detail=""):
     except Exception:
         pass 
 
+def generate_csrf_token():
+    if 'csrf_token' not in flask.session:
+        flask.session['csrf_token'] = secrets.token_hex(32)
+    return flask.session['csrf_token']
+
 def create_app():
     app = flask.Flask(
         __name__,
@@ -83,7 +88,7 @@ def create_app():
     app.config["SESSION_TYPE"] = "filesystem"
     Session(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-    CSRFProtect(app)
+    app.jinja_env.globals['csrf_token'] = generate_csrf_token
     register_routes(app)
 
     return app
@@ -132,6 +137,9 @@ def register_routes(app):
     def login():
 
         if flask.request.method == "POST":
+            token = flask.session.get('csrf_token')
+            if not token or token != flask.request.form.get('csrf_token'):
+                flask.abort(400)
             username = flask.request.form.get("username", "")
             password = flask.request.form.get("password", "")
 
@@ -235,6 +243,9 @@ def register_routes(app):
     @login_required
     def upload_document():
         user_id = flask.session.get("user_id")
+        token = flask.session.get('csrf_token')
+        if not token or token != flask.request.form.get('csrf_token'):
+            flask.abort(400)
         title = flask.request.form.get("title", "Untitled")
         uploaded_file = flask.request.files.get("document")
 
@@ -285,7 +296,9 @@ def register_routes(app):
     @login_required
     @admin_required
     def disable_user(user_id):
-
+        token = flask.session.get('csrf_token')
+        if not token or token != flask.request.form.get('csrf_token'):
+            flask.abort(400)
         conn = get_db()
         cur = conn.cursor()
 
@@ -303,7 +316,9 @@ def register_routes(app):
     @login_required
     @admin_required
     def enable_user(user_id):
-
+        token = flask.session.get('csrf_token')
+        if not token or token != flask.request.form.get('csrf_token'):
+            flask.abort(400)
         conn = get_db()
         cur = conn.cursor()
 
@@ -387,6 +402,9 @@ def register_routes(app):
     @login_required
     def share_document(document_id):
         user_id = flask.session.get("user_id")
+        token = flask.session.get('csrf_token')
+        if not token or token != flask.request.form.get('csrf_token'):
+            flask.abort(400)
         shared_with = flask.request.form.get("shared_with")
 
         if not shared_with:
