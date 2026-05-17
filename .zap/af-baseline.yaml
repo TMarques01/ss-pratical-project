@@ -1,0 +1,55 @@
+env:
+  contexts:
+    - name: secure-doc
+      urls:
+        - https://127.0.0.1
+      includePaths:
+        - https://127.0.0.1.*
+      excludePaths:
+        - https://127.0.0.1/logout.*
+      authentication:
+        method: form
+        parameters:
+          loginPageUrl: https://127.0.0.1/login
+          loginRequestUrl: https://127.0.0.1/login
+          loginRequestBody: "username={%username%}&password={%password%}"
+        verification:
+          method: poll
+          loggedInRegex: '\Qhref="/logout"\E'
+          loggedOutRegex: '\Qaction="/login"\E'
+          pollFrequency: 60
+          pollUnits: requests
+          pollUrl: https://127.0.0.1/documents
+      sessionManagement:
+        method: cookie
+      users:
+        - name: alice
+          credentials:
+            username: ${ZAP_USER}
+            password: ${ZAP_PASS}
+  parameters:
+    failOnError: true
+    progressToStdout: true
+
+jobs:
+  - type: passiveScan-config
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope: true
+
+  - type: spider
+    parameters:
+      context: secure-doc
+      user: alice
+      maxDuration: 5
+      maxDepth: 5
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk
+      reportFile: zap_auth_baseline_report
