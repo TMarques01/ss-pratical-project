@@ -66,14 +66,6 @@ jobs:
           docker pull "$DB_IMAGE"
           docker pull "$DBLOGS_IMAGE"
 
-      - name: Create .env file
-        run: |
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "API_KEY=${{ secrets.API_KEY }}" >> .env
-
       - name: Restore SSL certificates
         run: |
           mkdir -p nginx/certs
@@ -138,9 +130,11 @@ jobs:
         uses: zaproxy/action-baseline@v0.10.0
         with:
           target: "https://127.0.0.1"
+          rules_file_name: '.zap/rules.tsv'
           fail_action: true
           allow_issue_writing: false
           rules_file_name: ".zap/rules.tsv"
+
 
       - name: Promote validated images to dev
         if: success()
