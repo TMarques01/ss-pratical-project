@@ -66,17 +66,6 @@ jobs:
           docker pull "$DB_IMAGE"
           docker pull "$DBLOGS_IMAGE"
 
-      - name: Create .env file
-        run: |
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "API_KEY=${{ secrets.API_KEY }}" >> .env
-          echo "LOG_DB_USER=${{ secrets.LOG_DB_USER }}" >> .env
-          echo "LOG_DB_PASSWORD=${{ secrets.LOG_DB_PASSWORD }}" >> .env
-          echo "LOG_DB_NAME=${{ secrets.LOG_DB_NAME }}" >> .env
-
       - name: Restore SSL certificates
         run: |
           mkdir -p nginx/certs
