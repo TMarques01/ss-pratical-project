@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div align="right">
   <form action="{{ url_for('shared_documents') }}" method="get" style="display:inline;">
     <button type="submit">Shared Documents</button>
@@ -13,6 +12,7 @@
   <div class="card">
     <h2>Upload document</h2>
     <form method="post" action="{{ url_for('upload_document') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>Title</label>
       <input type="text" name="title" required>
 
