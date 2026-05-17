@@ -5,17 +5,39 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - dblogs
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - LOG_DB_HOST=dblogs
+      - LOG_DB_NAME=${LOG_DB_NAME}
+      - LOG_DB_USER=${LOG_DB_USER}
+      - LOG_DB_PASSWORD=${LOG_DB_PASSWORD}
     restart: unless-stopped
 
   db:
     image: ${DB_IMAGE}
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
 
+  dblogs:
+    image: ${DBLOGS_IMAGE}
+    environment:
+      - POSTGRES_DB=${LOG_DB_NAME}
+      - POSTGRES_USER=${LOG_DB_USER}
+      - POSTGRES_PASSWORD=${LOG_DB_PASSWORD}
+    volumes:
+      - pglogsdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  pglogsdata:

@@ -21,6 +21,7 @@ env:
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
   WEB_IMAGE_NAME: secure-doc-platform-web
   DB_IMAGE_NAME: secure-doc-platform-db
+  DBLOGS_IMAGE_NAME: secure-doc-platform-dblogs
 
 jobs:
   deliver:
@@ -57,11 +58,13 @@ jobs:
         run: |
           echo "WEB_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:${IMAGE_TAG}" >> "$GITHUB_ENV"
           echo "DB_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "DBLOGS_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DBLOGS_IMAGE_NAME }}:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Pull deliverable images
         run: |
           docker pull "$WEB_IMAGE"
           docker pull "$DB_IMAGE"
+          docker pull "$DBLOGS_IMAGE"
 
       - name: Create .env file
         run: |
@@ -75,6 +78,14 @@ jobs:
         env:
           WEB_IMAGE: ${{ env.WEB_IMAGE }}
           DB_IMAGE: ${{ env.DB_IMAGE }}
+          DBLOGS_IMAGE: ${{ env.DBLOGS_IMAGE }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          LOG_DB_NAME: ${{ secrets.LOG_DB_NAME }}
+          LOG_DB_USER: ${{ secrets.LOG_DB_USER }}
+          LOG_DB_PASSWORD: ${{ secrets.LOG_DB_PASSWORD }}
         run: |
           docker compose -f docker-compose.deploy.yml up -d
 
@@ -128,9 +139,11 @@ jobs:
         run: |
           docker tag "$WEB_IMAGE" "${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:dev"
           docker tag "$DB_IMAGE" "${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:dev"
+          docker tag "$DBLOGS_IMAGE" "${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DBLOGS_IMAGE_NAME }}:dev"
 
           docker push "${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.WEB_IMAGE_NAME }}:dev"
           docker push "${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DB_IMAGE_NAME }}:dev"
+          docker push "${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE_LC }}/${{ env.DBLOGS_IMAGE_NAME }}:dev"
 
       - name: Show container logs on failure
         if: failure()
